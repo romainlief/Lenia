@@ -2,8 +2,7 @@ from croissance import Fonction_de_croissance
 from constantes import *
 import numpy as np
 import scipy as sp
-from matplotlib import pyplot as plt
-from type_croissance import Type_de_croissance
+
 
 class Filtre:
     def __init__(
@@ -15,14 +14,14 @@ class Filtre:
     ) -> None:
         self.fonction_de_croissance = fonction_de_croissance
         self.size = size
-        self.mus = mus
+        self.mus = mus 
         self.sigmas = sigmas
         assert len(mus) == len(sigmas)
         self.R = size // 2
         self.y, self.x = np.ogrid[-self.R : self.R + 1, -self.R : self.R + 1]
         self.r = (
             np.sqrt(self.x * self.x + self.y * self.y) / self.R
-        )  # distance normalisée 0→1
+        ) 
 
         self.K = np.zeros_like(self.r)
 

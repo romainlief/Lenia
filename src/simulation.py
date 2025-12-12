@@ -19,8 +19,8 @@ class Simulation:
                 type=Type_de_croissance.GAUSSIENNE
             ),
             size=FILTRE_SIZE,
-            mus=[MU],
-            sigmas=[SIGMA],
+            mus=MUS,
+            sigmas=SIGMAS,
         )
         self.X = self.game.get_board
         self.__run()
