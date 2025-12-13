@@ -25,7 +25,7 @@ class Fonction_de_croissance:
         """Gaussienne du kernel (version 'bell' — sans normalisation par écart-type²)."""
         # Dans Lenia original, le kernel est : exp(-((x-mu)/sigma)^2 / 2)
         # Cela donne une cloche plus "serrée" que gauss pour même sigma
-        return np.exp(-((x - mu) / sigma) ** 2 / 2)
+        return np.exp(-(((x - mu) / sigma) ** 2) / 2)
 
     def other_function(self, x: np.ndarray) -> np.ndarray:
         return 0 + ((x >= 0.12) & (x <= 0.15)) - ((x < 0.12) | (x > 0.15))

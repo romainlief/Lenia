@@ -86,7 +86,7 @@ class Simulation:
 
     def seed_orbium(
         self,
-        orbium=ORBIUM,
+        orbium=pattern["orbium"].get("cells"),
         top_left: tuple | None = None,
         center: tuple | None = None,
         rotate: int = 0,

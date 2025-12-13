@@ -2,3 +2,6 @@
 
 - Faire le readme
 - Autres fonctions de croissance(step, linear, ...)
+- Faire les requirements.txt
+- Faire le FFT dans filtre.py pour optimiser le calcul du convolution
+- Faire une classe pour chaque espèce
