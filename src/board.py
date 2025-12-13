@@ -2,9 +2,9 @@ import numpy as np
 
 
 class GameOfLifeBase:
-    def __init__(self, size: int) -> None:
+    def __init__(self, size: int, void: bool) -> None:
         self.__size = size
-        self.__board: np.ndarray = np.random.rand(size, size)
+        self.__board: np.ndarray = np.random.rand(size, size) if not void else np.zeros((size, size))
 
     @property
     def get_size(self) -> int:
