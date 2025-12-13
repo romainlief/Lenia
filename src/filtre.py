@@ -11,26 +11,57 @@ class Filtre:
         self,
         fonction_de_croissance: Fonction_de_croissance,
         size: int,
-        mus: list,
-        sigmas: list,
+        mus: list | None = None,
+        sigmas: list | None = None,
+        b: list | None = None,
     ) -> None:
         self.fonction_de_croissance = fonction_de_croissance
         self.size = size
         self.mus = mus
         self.sigmas = sigmas
-        assert len(mus) == len(sigmas)
+        self.b = b  # pour kernel multi-anneau
+        
+        if mus is not None and sigmas is not None:
+            assert len(mus) == len(sigmas)
+        
         self.R = size // 2
         self.y, self.x = np.ogrid[-self.R : self.R + 1, -self.R : self.R + 1]
-        self.r = np.sqrt(self.x * self.x + self.y * self.y) / self.R
+        self.distance = np.sqrt(self.x * self.x + self.y * self.y)
+        self.r = self.distance / self.R
 
         self.K = np.zeros_like(self.r)
 
+    def bell(self, x, m, s):
+        """Gaussian bell: exp(-((x-m)/s)^2 / 2)"""
+        return np.exp(-((x - m) / s) ** 2 / 2)
+
     def filtrer(self) -> np.ndarray:
-        for mu, sigma in zip(self.mus, self.sigmas):
-            self.K += self.fonction_de_croissance.gauss_kernel(self.r, mu, sigma)
-        self.K[self.r > 1] = 0  # on met à 0 au delà du rayon
+        """Construit le kernel. Utilise soit b (multi-anneau) soit MUS/SIGMAS."""
+        if self.b is not None:
+            # Approche multi-anneau (comme le code référence)
+            b_arr = np.asarray(self.b)
+            D = self.distance / self.R * len(b_arr)  # Normaliser en "unités d'anneau"
+            
+            # Sélectionner l'amplitude pour chaque anneau
+            ring_indices = np.minimum(D.astype(int), len(b_arr) - 1)
+            amplitudes = b_arr[ring_indices]
+            
+            # Appliquer le gaussian lisse à l'intérieur de chaque anneau
+            # D % 1 = partie fractionnelle (0-1 dans chaque anneau)
+            self.K = amplitudes * self.bell(D % 1, 0.5, 0.15)
+            
+            # Masquer au-delà du rayon
+            self.K[D >= len(b_arr)] = 0
+        elif self.mus is not None and self.sigmas is not None:
+            for mu, sigma in zip(self.mus, self.sigmas):
+                self.K += self.fonction_de_croissance.gauss_kernel(self.r, mu, sigma)
+            self.K[self.r > 1] = 0  # on met à 0 au delà du rayon
+        else:
+            raise ValueError("Soit b, soit mus/sigmas doivent être fournis")
+        
         K_sum = np.sum(self.K)
-        self.K /= K_sum  # normalisation
+        if K_sum > 0:
+            self.K /= K_sum  # normalisation
         return self.K
 
     def evolve_lenia(self, X: np.ndarray) -> np.ndarray:
