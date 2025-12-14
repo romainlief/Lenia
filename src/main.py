@@ -1,26 +1,23 @@
 from launcher.simulation import Simulation
 from const.constantes import *
-from species.species import Species
-from const.pattern import pattern
-
+from species.species_types import Species_types
+from species.orbium import Orbium
+from species.hydrogeminium import Hydrogeminium
 
 if __name__ == "__main__":
     try:
-        sim = Simulation(size=BOARD_SIZE, kernel_type=Species.HYDROGEMINIUM)
-        sim.seed_hydrogeminium(
-            pattern["geminium"].get("cells"),
-            center=(BOARD_SIZE // 2, BOARD_SIZE // 2),
+        sim = Simulation(kernel_type=KERNEL_TYPE)
+       
+        orbium = Orbium()
+        hydrogenium = Hydrogeminium()
+        patch = orbium.make_patch(
             rotate=0,
-            amplitude=1.0,
+            amplitude=4.0,
             normalize=True,
         )
-        #sim.seed_orbium(
-        #    pattern["orbium"].get("cells"),
-        #    center=(BOARD_SIZE // 4, BOARD_SIZE // 4),
-        #    rotate=0,
-        #    amplitude=1.0,
-        #    normalize=True,
-       # )
+
+        sim.apply_patch(patch, center=(BOARD_SIZE // 2, BOARD_SIZE // 2))
+
         sim.run()
     except KeyboardInterrupt:
         print("Simulation interrompue par l'utilisateur.")

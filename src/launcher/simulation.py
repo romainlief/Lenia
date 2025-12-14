@@ -3,27 +3,29 @@ from croissance.croissances import Fonction_de_croissance
 from kernel.filtre import Filtre
 from const.constantes import *
 from croissance.type_croissance import Type_de_croissance
-from const.pattern import pattern
 
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import scipy as sp
-from species.species import Species
+from scipy.ndimage import shift
+from species.species_types import Species_types
 
 
 class Simulation:
-    def __init__(self, size: int, kernel_type: Species = Species.GENERIC) -> None:
+    def __init__(
+        self, size: int = BOARD_SIZE, kernel_type: Species_types = Species_types.GENERIC
+    ) -> None:
         """
         Initialiser la simulation.
         kernel_type: "orbium", "hydrogeminium", ou "generic"
         """
         self.size = size
-        self.game = Board(size=self.size, void=VOID_BOARD)
+        self.game = Board()
 
         # Choisir le kernel selon le type
-        if kernel_type == Species.HYDROGEMINIUM:
-            b = pattern["geminium"].get("b")
+        if kernel_type == Species_types.HYDROGEMINIUM:
+            b = HYDROGEMINIUM_B
             self.filtre = Filtre(
                 fonction_de_croissance=Fonction_de_croissance(
                     type=Type_de_croissance.GAUSSIENNE
@@ -31,8 +33,8 @@ class Simulation:
                 size=FILTRE_SIZE,
                 b=b,  # Utiliser le kernel multi-anneau
             )
-        elif kernel_type == Species.ORBIUM:
-            b = pattern["orbium"].get("b")
+        elif kernel_type == Species_types.ORBIUM:
+            b = ORBIUM_B
             self.filtre = Filtre(
                 fonction_de_croissance=Fonction_de_croissance(
                     type=Type_de_croissance.GAUSSIENNE
@@ -53,102 +55,70 @@ class Simulation:
         # board initial (copie pour pouvoir modifier sans toucher à l'objet GameOfLifeBase)
         self.X = self.game.get_board.copy()
 
-    def seed_orbium(
+    def apply_patch(
         self,
-        orbium=pattern["orbium"].get("cells"),
-        top_left: tuple | None = None,
+        patch: np.ndarray,
         center: tuple | None = None,
         rotate: int = 0,
         amplitude: float = 1.0,
         normalize: bool = True,
     ) -> None:
-        """Insérer un motif `orbium` (numpy 2D) dans la grille `self.X`.
-
-        - `orbium`: tableau 2D (valeurs ≈ 0..1).
-        - `top_left`: (y, x) coordonnée du coin supérieur gauche où coller le motif.
-        - `center`: (y, x) coordonnée du centre du motif (utilisé si `top_left` est None).
-        - `rotate`: nombre de rotations de 90° (0..3, sens horaire).
-        - `amplitude`: facteur multiplicatif appliqué au motif.
-        - `normalize`: si True, normalise l'orbium pour que sa valeur max soit 1 avant `amplitude`.
-
-        Si `top_left` et `center` sont None, le motif est collé au centre de la grille.
-        Les bords sont enroulés (modulo) pour éviter les erreurs d'indice.
         """
-        arr = np.array(orbium, dtype=float)
+        Applique un patch 2D sur la grille self.X.
+
+        patch     : np.ndarray, valeurs approximativement 0..1
+        center    : (y,x) coordonnée du centre où placer le patch, par défaut centre de la grille
+        rotate    : nombre de rotations de 90° (0..3)
+        amplitude : facteur multiplicatif appliqué au patch
+        normalize : si True, normalise le patch à 1 avant amplitude
+        """
+
+        arr = np.array(patch, dtype=float)
+
+        # --- 1️⃣ rotation si nécessaire ---
         if rotate % 4 != 0:
             arr = np.rot90(arr, -(rotate % 4))
 
+        # --- 2️⃣ normalisation ---
         if normalize:
             mx = arr.max()
             if mx > 0:
-                arr = arr / mx
+                arr /= mx
 
-        arr = arr * amplitude
+        # --- 3️⃣ recentrage CONTINU (solution B Lenia) ---
+        yy, xx = np.indices(arr.shape)
+        mass = arr.sum()
 
-        h, w = arr.shape
-
-        if top_left is None:
-            if center is None:
-                cy = self.size // 2
-                cx = self.size // 2
-            else:
-                cy, cx = center
-            top = int(np.round(cy - h // 2))
-            left = int(np.round(cx - w // 2))
+        if mass > 0:
+            cy = (yy * arr).sum() / mass
+            cx = (xx * arr).sum() / mass
         else:
-            top, left = top_left
+            cy = (arr.shape[0] - 1) / 2
+            cx = (arr.shape[1] - 1) / 2
 
-        for dy in range(h):
-            for dx in range(w):
-                y = (top + dy) % self.size
-                x = (left + dx) % self.size
-                self.X[y, x] = np.clip(self.X[y, x] + arr[dy, dx], 0, 1)
+        gy = (arr.shape[0] - 1) / 2
+        gx = (arr.shape[1] - 1) / 2
+        dy = gy - cy
+        dx = gx - cx
 
-    def seed_hydrogeminium(
-        self,
-        hydrogeminium=pattern["geminium"].get("cells"),
-        top_left: tuple | None = None,
-        center: tuple | None = None,
-        rotate: int = 0,
-        amplitude: float = 1.0,
-        normalize: bool = True,
-    ) -> None:
-        """Insérer un motif `hydrogeminium` (numpy 2D) dans la grille `self.X`.
+        arr = shift(
+            arr, shift=(dy, dx), order=1, mode="constant", cval=0.0, prefilter=False
+        )
 
-        - `hydrogeminium`: tableau 2D (valeurs ≈ 0..1).
-        - `top_left`: (y, x) coordonnée du coin supérieur gauche où coller le motif.
-        - `center`: (y, x) coordonnée du centre du motif (utilisé si `top_left` est None).
-        - `rotate`: nombre de rotations de 90° (0..3, sens horaire).
-        - `amplitude`: facteur multiplicatif appliqué au motif.
-        - `normalize`: si True, normalise l'hydrogeminium pour que sa valeur max soit 1 avant `amplitude`.
+        # --- 4️⃣ appliquer amplitude ---
+        arr *= amplitude
 
-        Si `top_left` et `center` sont None, le motif est collé au centre de la grille.
-        Les bords sont enroulés (modulo) pour éviter les erreurs d'indice.
-        """
-        arr = np.array(hydrogeminium, dtype=float)
-        if rotate % 4 != 0:
-            arr = np.rot90(arr, -(rotate % 4))
-
-        if normalize:
-            mx = arr.max()
-            if mx > 0:
-                arr = arr / mx
-
-        arr = arr * amplitude
-
+        # --- 5️⃣ calcul du coin supérieur gauche ---
         h, w = arr.shape
-
-        if top_left is None:
-            if center is None:
-                cy = self.size // 2
-                cx = self.size // 2
-            else:
-                cy, cx = center
-            top = int(np.round(cy - h // 2))
-            left = int(np.round(cx - w // 2))
+        if center is None:
+            cy, cx = self.size // 2, self.size // 2
         else:
-            top, left = top_left
+            cy, cx = center
 
+        top = int(round(cy - h / 2))
+        left = int(round(cx - w / 2))
+
+        # --- 6️⃣ injection du patch dans la grille avec wrap ---
         for dy in range(h):
             for dx in range(w):
                 y = (top + dy) % self.size
