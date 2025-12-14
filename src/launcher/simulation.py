@@ -1,14 +1,14 @@
-from board import GameOfLifeBase
-from croissance import Fonction_de_croissance
-from filtre import Filtre
-from constantes import *
-from type_croissance import Type_de_croissance
+from board.board import GameOfLifeBase
+from croissance.croissances import Fonction_de_croissance
+from kernel.filtre import Filtre
+from const.constantes import *
+from croissance.type_croissance import Type_de_croissance
 
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import scipy as sp
-from species import Species
+from species.species import Species
 
 
 class Simulation:
@@ -32,7 +32,6 @@ class Simulation:
             )
         elif kernel_type == Species.ORBIUM:
             b = pattern["orbium"].get("b")
-            print("lol")
             self.filtre = Filtre(
                 fonction_de_croissance=Fonction_de_croissance(
                     type=Type_de_croissance.GAUSSIENNE

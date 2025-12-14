@@ -1,9 +1,9 @@
-from croissance import Fonction_de_croissance
-from constantes import *
+from croissance.croissances import Fonction_de_croissance
+from const.constantes import *
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy as sp
-from type_croissance import Type_de_croissance
+from croissance.type_croissance import Type_de_croissance
 
 
 class Filtre:

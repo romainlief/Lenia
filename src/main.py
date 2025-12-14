@@ -1,6 +1,6 @@
-from simulation import Simulation
-from constantes import *
-from species import Species
+from launcher.simulation import Simulation
+from const.constantes import *
+from species.species import Species
 
 
 if __name__ == "__main__":

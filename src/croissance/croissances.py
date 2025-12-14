@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from type_croissance import Type_de_croissance
-from constantes import *
+from const.constantes import *
+from croissance.type_croissance import Type_de_croissance
 
 
 class Fonction_de_croissance:
