@@ -10,7 +10,7 @@ if __name__ == "__main__":
        
         orbium = Orbium()
         hydrogenium = Hydrogeminium()
-        patch = orbium.make_patch(
+        patch = hydrogenium.make_patch(
             rotate=0,
             amplitude=4.0,
             normalize=True,

@@ -3,7 +3,7 @@ from species.species_types import Species_types
 
 # -----------BOARD---------------------
 BOARD_SIZE: int = 100
-VOID_BOARD: bool = False
+VOID_BOARD: bool = True
 
 # ----------- PARAMETRES ORBIUM -----------
 ORBIUM_M: float = pattern["orbium"].get("m", 0)  # mu de la croissance pour cet orbium
@@ -39,7 +39,7 @@ GENERIC_R: int = 20
 
 # --- CHOIX ACTIF (orbium, hydrogeminium, ou generic) ---
 USE_ORBIUM_PARAMS: bool = False  # si True: utilise ORBIUM_M/S/T/R
-USE_HYDROGEMINIUM_PARAMS: bool = False  # si True: utilise HYDROGEMINIUM_M/S/T/R
+USE_HYDROGEMINIUM_PARAMS: bool = True  # si True: utilise HYDROGEMINIUM_M/S/T/R
 # Si les deux sont False: utilise GENERIC_M/S/T/R
 
 # -----------CROISSANCE----------------
