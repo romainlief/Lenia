@@ -53,7 +53,7 @@ class Orbium(ASpecies):
         # centre géométrique continu
         gy = (arr.shape[0] - 1) / 2
         gx = (arr.shape[1] - 1) / 2
-        # 6️⃣ décalage CONTINU (clé Lenia)
+        # décalage CONTINU (clé Lenia)
         dy = gy - cy
         dx = gx - cx
 
@@ -67,5 +67,4 @@ class Orbium(ASpecies):
             prefilter=False,
         )
 
-        # 8️⃣ amplitude finale
         return arr * amplitude
