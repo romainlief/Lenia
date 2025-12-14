@@ -26,18 +26,11 @@ class Fonction_de_croissance:
         # Dans Lenia original, le kernel est : exp(-((x-mu)/sigma)^2 / 2)
         # Cela donne une cloche plus "serrée" que gauss pour même sigma
         return np.exp(-(((x - mu) / sigma) ** 2) / 2)
+    
+    def bell_growth(self, U, m, s): # For fish
+        return np.exp(-(((U - m) / s) ** 2) / 2) * 2 - 1
 
     def other_function(self, x: np.ndarray) -> np.ndarray:
         return 0 + ((x >= 0.12) & (x <= 0.15)) - ((x < 0.12) | (x > 0.15))
 
 
-# plot de la fonction de croissance
-fct = Fonction_de_croissance(type=Type_de_croissance.GAUSSIENNE)
-x = np.linspace(0, 1, 500)
-y = fct.choix_fonction(x)
-plt.plot(x, y)
-plt.title("Fonction de croissance gaussienne")
-plt.xlabel("x")
-plt.ylabel("f(x)")
-plt.grid()
-plt.show()

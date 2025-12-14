@@ -1,5 +1,6 @@
 from .pattern import pattern
 from species.species_types import Species_types
+from typing import Any
 
 # -----------BOARD---------------------
 BOARD_SIZE: int = 100
@@ -31,7 +32,13 @@ HYDROGEMINIUM_R: int = pattern["geminium"].get(
 HYDROGEMINIUM_CELLS = pattern["geminium"].get("cells", [])
 HYDROGEMINIUM_B: list = pattern["geminium"].get("b", [])
 
-# ----------- PARAMETRES GENERIQUES (pour glider, random orbions, etc.) -----------
+# ----------- PARAMETRES FISH -----------
+FISH_R: int = pattern["fish"].get("R", 0)  
+FISH_T: int = pattern["fish"].get("T", 0) 
+FISH_KERNEL = pattern["fish"].get("kernels", [])
+FISH_CELLS = pattern["fish"].get("cells", [])
+
+# ----------- PARAMETRES GENERIQUES -----------
 GENERIC_M: float = 0.5  # mu générique pour formes arbitraires
 GENERIC_S: float = 0.1  # sigma générique
 GENERIC_T: int = 10
@@ -39,7 +46,8 @@ GENERIC_R: int = 20
 
 # --- CHOIX ACTIF (orbium, hydrogeminium, ou generic) ---
 USE_ORBIUM_PARAMS: bool = False  # si True: utilise ORBIUM_M/S/T/R
-USE_HYDROGEMINIUM_PARAMS: bool = True  # si True: utilise HYDROGEMINIUM_M/S/T/R
+USE_HYDROGEMINIUM_PARAMS: bool = False  # si True: utilise HYDROGEMINIUM_M/S/T/R
+USE_FISH_PARAMS: bool = True
 # Si les deux sont False: utilise GENERIC_M/S/T/R
 
 # -----------CROISSANCE----------------
@@ -56,6 +64,12 @@ elif USE_HYDROGEMINIUM_PARAMS:
     ACTIVE_R: int = HYDROGEMINIUM_R
     ACTIVE_T: float = HYDROGEMINIUM_T
     KERNEL_TYPE = Species_types.HYDROGEMINIUM
+elif USE_FISH_PARAMS:
+    SIGMA: float | None = None
+    MU: float | None = None
+    ACTIVE_R: int = FISH_R
+    ACTIVE_T: float = FISH_T
+    KERNEL_TYPE = Species_types.FISH
 else:
     SIGMA: float = GENERIC_S
     MU: float = GENERIC_M

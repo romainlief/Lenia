@@ -7,7 +7,6 @@ from croissance.type_croissance import Type_de_croissance
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-import scipy as sp
 from scipy.ndimage import shift
 from species.species_types import Species_types
 
@@ -42,6 +41,16 @@ class Simulation:
                 size=FILTRE_SIZE,
                 b=b,
             )
+        elif kernel_type == Species_types.FISH:
+            self.filtre = Filtre(
+                fonction_de_croissance=Fonction_de_croissance(
+                    type=Type_de_croissance.GAUSSIENNE
+                ),
+                size=FILTRE_SIZE,
+                b=None,
+                kernels=FISH_KERNEL
+            )
+            self.filtre.kernels = FISH_KERNEL  # Utiliser le kernel défini pour fish 
         else:  # generic
             self.filtre = Filtre(
                 fonction_de_croissance=Fonction_de_croissance(
@@ -74,18 +83,15 @@ class Simulation:
         """
 
         arr = np.array(patch, dtype=float)
-
-        # --- 1️⃣ rotation si nécessaire ---
         if rotate % 4 != 0:
             arr = np.rot90(arr, -(rotate % 4))
 
-        # --- 2️⃣ normalisation ---
         if normalize:
             mx = arr.max()
             if mx > 0:
                 arr /= mx
 
-        # --- 3️⃣ recentrage CONTINU (solution B Lenia) ---
+        #  recentrage
         yy, xx = np.indices(arr.shape)
         mass = arr.sum()
 
@@ -105,10 +111,10 @@ class Simulation:
             arr, shift=(dy, dx), order=1, mode="constant", cval=0.0, prefilter=False
         )
 
-        # --- 4️⃣ appliquer amplitude ---
+        # appliquer amplitude
         arr *= amplitude
 
-        # --- 5️⃣ calcul du coin supérieur gauche ---
+        # calcul du coin supérieur gauche
         h, w = arr.shape
         if center is None:
             cy, cx = self.size // 2, self.size // 2
@@ -118,7 +124,7 @@ class Simulation:
         top = int(round(cy - h / 2))
         left = int(round(cx - w / 2))
 
-        # --- 6️⃣ injection du patch dans la grille avec wrap ---
+        # injection du patch dans la grille avec wrap
         for dy in range(h):
             for dx in range(w):
                 y = (top + dy) % self.size

@@ -9,7 +9,6 @@ from const.constantes import (
     HYDROGEMINIUM_B,
     HYDROGEMINIUM_CELLS,
 )
-from scipy.ndimage import shift
 
 
 class Hydrogeminium(ASpecies):

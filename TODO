@@ -1,10 +1,13 @@
 # TODO List
 
+## TODO DU MOMENT
+
+-Faire FISH
+
+## TODO GENERAL
+
 - Faire le readme
 - Autres fonctions de croissance(step, linear, ...)
 - Faire les requirements.txt
-- Faire le FFT dans filtre.py pour optimiser le calcul du convolution
-- Faire une classe pour chaque espèce
-- Faire les constantes en fonction du dico pattern
 - Faire une GUI pour lancer en boucle/changer de pattern/filtre etc...
 - Faire une fenetre plus grande/voir meme ou on peu changer la taille
