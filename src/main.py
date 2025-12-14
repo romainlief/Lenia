@@ -1,6 +1,7 @@
 from launcher.simulation import Simulation
 from const.constantes import *
 from species.species import Species
+from const.pattern import pattern
 
 
 if __name__ == "__main__":

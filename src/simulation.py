@@ -3,7 +3,6 @@ from croissance.croissances import Fonction_de_croissance
 from kernel.filtre import Filtre
 from const.constantes import *
 from croissance.type_croissance import Type_de_croissance
-from const.pattern import pattern
 
 import numpy as np
 import matplotlib.pyplot as plt

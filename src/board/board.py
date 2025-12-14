@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class GameOfLifeBase:
+class Board:
     def __init__(self, size: int, void: bool) -> None:
         self.__size = size
         self.__board: np.ndarray = np.random.rand(size, size) if not void else np.zeros((size, size))
