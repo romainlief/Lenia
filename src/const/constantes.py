@@ -38,6 +38,12 @@ FISH_T: int = pattern["fish"].get("T", 0)
 FISH_KERNEL = pattern["fish"].get("kernels", [])
 FISH_CELLS = pattern["fish"].get("cells", [])
 
+# ----------- PARAMETRES AQUARIUM -----------
+AQUARIUM_R: int = pattern["aquarium"].get("R", 0)  
+AQUARIUM_T: int = pattern["aquarium"].get("T", 0) 
+AQUARIUM_KERNEL = pattern["aquarium"].get("kernels", [])
+AQUARIUM_CELLS = pattern["aquarium"].get("cells", [])
+
 # ----------- PARAMETRES GENERIQUES -----------
 GENERIC_M: float = 0.5  # mu générique pour formes arbitraires
 GENERIC_S: float = 0.1  # sigma générique
@@ -48,6 +54,7 @@ GENERIC_R: int = 20
 USE_ORBIUM_PARAMS: bool = False  # si True: utilise ORBIUM_M/S/T/R
 USE_HYDROGEMINIUM_PARAMS: bool = False  # si True: utilise HYDROGEMINIUM_M/S/T/R
 USE_FISH_PARAMS: bool = True
+USE_AQUARIUM_PARAMS: bool = False
 # Si les deux sont False: utilise GENERIC_M/S/T/R
 
 # -----------CROISSANCE----------------
@@ -70,6 +77,12 @@ elif USE_FISH_PARAMS:
     ACTIVE_R: int = FISH_R
     ACTIVE_T: float = FISH_T
     KERNEL_TYPE = Species_types.FISH
+elif USE_AQUARIUM_PARAMS:
+    SIGMA: float | None = None
+    MU: float | None = None
+    ACTIVE_R: int = AQUARIUM_R
+    ACTIVE_T: float = AQUARIUM_T
+    KERNEL_TYPE = Species_types.AQUARIUM
 else:
     SIGMA: float = GENERIC_S
     MU: float = GENERIC_M

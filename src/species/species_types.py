@@ -6,3 +6,4 @@ class Species_types(Enum):
     HYDROGEMINIUM = "geminium"
     FISH = "fish"
     ORBIUM = "orbium"
+    AQUARIUM = "aquarium"
