@@ -43,6 +43,9 @@ AQUARIUM_R: int = pattern["aquarium"].get("R", 0)
 AQUARIUM_T: int = pattern["aquarium"].get("T", 0) 
 AQUARIUM_KERNEL = pattern["aquarium"].get("kernels", [])
 AQUARIUM_CELLS = pattern["aquarium"].get("cells", [])
+DESTINATION_AQUARIUM = [k["c1"] for k in AQUARIUM_KERNEL]
+SOURCE_AQUARIUM = [k["c0"] for k in AQUARIUM_KERNEL]
+AQUARIUM_H = [k["h"] for k in AQUARIUM_KERNEL]
 
 # ----------- PARAMETRES GENERIQUES -----------
 GENERIC_M: float = 0.5  # mu générique pour formes arbitraires
