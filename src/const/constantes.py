@@ -1,10 +1,12 @@
 from .pattern import pattern
 from species.species_types import Species_types
 from typing import Any
+import numpy as np
 
 # -----------BOARD---------------------
 BOARD_SIZE: int = 100
 VOID_BOARD: bool = True
+CHANNEL_COUNT: int = 1
 
 # ----------- PARAMETRES ORBIUM -----------
 ORBIUM_M: float = pattern["orbium"].get("m", 0)  # mu de la croissance pour cet orbium
@@ -42,10 +44,15 @@ FISH_CELLS = pattern["fish"].get("cells", [])
 AQUARIUM_R: int = pattern["aquarium"].get("R", 0)  
 AQUARIUM_T: int = pattern["aquarium"].get("T", 0) 
 AQUARIUM_KERNEL = pattern["aquarium"].get("kernels", [])
-AQUARIUM_CELLS = pattern["aquarium"].get("cells", [])
 DESTINATION_AQUARIUM = [k["c1"] for k in AQUARIUM_KERNEL]
 SOURCE_AQUARIUM = [k["c0"] for k in AQUARIUM_KERNEL]
 AQUARIUM_H = [k["h"] for k in AQUARIUM_KERNEL]
+AQUARIUM_bs = [k["b"] for k in AQUARIUM_KERNEL]
+AQUARIUM_rs = [AQUARIUM_R * k["r"] for k in AQUARIUM_KERNEL]
+AQUARIUM_ms = [k["m"] for k in AQUARIUM_KERNEL]
+AQUARIUM_ss = [k["s"] for k in AQUARIUM_KERNEL]
+AQUARIUM_hs = [k["h"] for k in AQUARIUM_KERNEL]
+AQUARIUM_CELLS = np.array(pattern["aquarium"]["cells"], dtype=np.float32)
 
 # ----------- PARAMETRES GENERIQUES -----------
 GENERIC_M: float = 0.5  # mu générique pour formes arbitraires
@@ -56,8 +63,8 @@ GENERIC_R: int = 20
 # --- CHOIX ACTIF (orbium, hydrogeminium, ou generic) ---
 USE_ORBIUM_PARAMS: bool = False  # si True: utilise ORBIUM_M/S/T/R
 USE_HYDROGEMINIUM_PARAMS: bool = False  # si True: utilise HYDROGEMINIUM_M/S/T/R
-USE_FISH_PARAMS: bool = True
-USE_AQUARIUM_PARAMS: bool = False
+USE_FISH_PARAMS: bool = False
+USE_AQUARIUM_PARAMS: bool = True
 # Si les deux sont False: utilise GENERIC_M/S/T/R
 
 # -----------CROISSANCE----------------
@@ -68,30 +75,35 @@ if USE_ORBIUM_PARAMS:
     ACTIVE_R: int = ORBIUM_R
     ACTIVE_T: float = ORBIUM_T
     KERNEL_TYPE = Species_types.ORBIUM
+    CHANNEL_COUNT = 1
 elif USE_HYDROGEMINIUM_PARAMS:
     SIGMA: float = HYDROGEMINIUM_S
     MU: float = HYDROGEMINIUM_M
     ACTIVE_R: int = HYDROGEMINIUM_R
     ACTIVE_T: float = HYDROGEMINIUM_T
     KERNEL_TYPE = Species_types.HYDROGEMINIUM
+    CHANNEL_COUNT = 1
 elif USE_FISH_PARAMS:
     SIGMA: float | None = None
     MU: float | None = None
     ACTIVE_R: int = FISH_R
     ACTIVE_T: float = FISH_T
     KERNEL_TYPE = Species_types.FISH
+    CHANNEL_COUNT = 1
 elif USE_AQUARIUM_PARAMS:
     SIGMA: float | None = None
     MU: float | None = None
     ACTIVE_R: int = AQUARIUM_R
     ACTIVE_T: float = AQUARIUM_T
     KERNEL_TYPE = Species_types.AQUARIUM
+    CHANNEL_COUNT = 3
 else:
     SIGMA: float = GENERIC_S
     MU: float = GENERIC_M
     ACTIVE_R: int = GENERIC_R
     ACTIVE_T: float = GENERIC_T
     KERNEL_TYPE = Species_types.GENERIC
+    CHANNEL_COUNT = 1
 
 
 DT: float = 1.0 / ACTIVE_T

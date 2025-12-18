@@ -12,7 +12,8 @@ class Filtre:
         mus: list | None = None,
         sigmas: list | None = None,
         b: list | None = None,
-        kernels: list | None = None,  # pour Fish multi-kernels
+        kernels: list | None = None,  # pour Fish multi-kernels,
+        multi_channel: bool = False,
     ) -> None:
         self.fonction_de_croissance = fonction_de_croissance
         self.size = size
@@ -25,6 +26,7 @@ class Filtre:
         self.y, self.x = np.ogrid[-self.R : self.R + 1, -self.R : self.R + 1]
         self.distance = np.sqrt(self.x**2 + self.y**2)
         self.r = self.distance / self.R
+        self.multi_channel = multi_channel
 
         if mus is not None and sigmas is not None:
             assert len(mus) == len(sigmas)
@@ -45,10 +47,13 @@ class Filtre:
         kernels_fft = []
         for k in self.kernels:
             y, x = np.ogrid[-mid_h:mid_h, -mid_w:mid_w]
-            D = np.sqrt(x**2 + y**2) / self.R * len(k['b'])
-            amplitudes = np.asarray(k['b'])[np.minimum(D.astype(int), len(k['b'])-1)]
+            # radius for this kernel (relative factor in pattern)
+            r_k = max(1e-6, self.R * k.get("r", 1.0))
+            # distance scaled by kernel radius and number of rings
+            D = np.sqrt(x**2 + y**2) / r_k * len(k["b"])
+            amplitudes = np.asarray(k["b"])[np.minimum(D.astype(int), len(k["b"]) - 1)]
             K_local = amplitudes * self.bell(D % 1, 0.5, 0.15)
-            K_local[D >= len(k['b'])] = 0
+            K_local[D >= len(k["b"]) ] = 0
             K_local /= K_local.sum() if K_local.sum() > 0 else 1
             kernels_fft.append(np.fft.fft2(np.fft.fftshift(K_local)))
 
@@ -98,12 +103,31 @@ class Filtre:
     def evolve_lenia(self, X: np.ndarray):
         """Évolution générique pour Lenia classique ou Fish"""
         # Mode Fish
-        if self.kernels is not None:
+        if self.kernels is not None and not self.multi_channel:
             Ks = self.prepared_kernels_fft
-            print(Ks)
             Us = [np.real(np.fft.ifft2(fK * np.fft.fft2(X))) for fK in Ks]
-            Gs = [self.bell_growth(U, k['m'], k['s']) for U, k in zip(Us, self.kernels)]
+            Gs = [self.bell_growth(U, k["m"], k["s"]) for U, k in zip(Us, self.kernels)]
             X = np.clip(X + DT * np.mean(np.asarray(Gs), axis=0), 0, 1)
+
+        elif (
+            self.kernels is not None and self.multi_channel
+        ):  # Multi-canaux pour Aquarium
+            fXs = [np.fft.fft2(Xi) for Xi in X]
+            Gs = [np.zeros_like(Xi) for Xi in X]
+
+            for i, (fK, src, dst, h) in enumerate(
+                zip(
+                    self.prepared_kernels_fft,
+                    SOURCE_AQUARIUM,
+                    DESTINATION_AQUARIUM,
+                    AQUARIUM_H,
+                )
+            ):
+                U = np.real(np.fft.ifft2(fK * fXs[src]))
+                A = self.bell_growth(U, AQUARIUM_ms[i], AQUARIUM_ss[i])
+                Gs[dst] += h * A
+
+            return [np.clip(Xi + DT * Gi, 0, 1) for Xi, Gi in zip(X, Gs)]
         else:  # Lenia classique
             K = self.filtrer()
             U = np.real(np.fft.ifft2(np.fft.fft2(X) * K))

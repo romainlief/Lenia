@@ -21,6 +21,10 @@ class Simulation:
         """
         self.size = size
         self.game = Board()
+        self.multi_channel : bool = self.game.channels > 1
+        
+        if USE_AQUARIUM_PARAMS:
+            self.place_aquarium(self.game, AQUARIUM_CELLS, 1, 1)
 
         # Choisir le kernel selon le type
         if kernel_type == Species_types.HYDROGEMINIUM:
@@ -48,9 +52,20 @@ class Simulation:
                 ),
                 size=FILTRE_SIZE,
                 b=None,
-                kernels=FISH_KERNEL
+                kernels=FISH_KERNEL,
             )
-            self.filtre.kernels = FISH_KERNEL  # Utiliser le kernel défini pour fish 
+            self.filtre.kernels = FISH_KERNEL  # Utiliser le kernel défini pour fish
+        elif kernel_type == Species_types.AQUARIUM:
+            self.filtre = Filtre(
+                fonction_de_croissance=Fonction_de_croissance(
+                    type=Type_de_croissance.GAUSSIENNE
+                ),
+                size=FILTRE_SIZE,
+                b=None,
+                kernels=AQUARIUM_KERNEL,
+                multi_channel=self.multi_channel,
+            )
+            self.filtre.kernels = AQUARIUM_KERNEL  # Utiliser le kernel défini pour aquarium
         else:  # generic
             self.filtre = Filtre(
                 fonction_de_croissance=Fonction_de_croissance(
@@ -62,7 +77,14 @@ class Simulation:
             )
 
         # board initial (copie pour pouvoir modifier sans toucher à l'objet GameOfLifeBase)
-        self.X = self.game.get_board.copy()
+        self.X_raw = self.game.board.copy()
+        # Représentation utilisée pour l'évolution : soit 2D, soit liste de plans (multi-canaux)
+        if self.X_raw.ndim == 3 and self.multi_channel:
+            self.X = [self.X_raw[:, :, c].copy() for c in range(self.X_raw.shape[2])]
+        elif self.X_raw.ndim == 3:
+            self.X = np.mean(self.X_raw, axis=2)
+        else:
+            self.X = self.X_raw.copy()
 
     def apply_patch(
         self,
@@ -129,14 +151,49 @@ class Simulation:
             for dx in range(w):
                 y = (top + dy) % self.size
                 x = (left + dx) % self.size
-                self.X[y, x] = np.clip(self.X[y, x] + arr[dy, dx], 0, 1)
+                if isinstance(self.X, list):
+                    for c in range(len(self.X)):
+                        self.X[c][y, x] = np.clip(self.X[c][y, x] + arr[dy, dx], 0, 1)
+                else:
+                    self.X[y, x] = np.clip(self.X[y, x] + arr[dy, dx], 0, 1)
+
+        # synchroniser la grille brute multi-canaux
+        if hasattr(self, "X_raw") and self.X_raw.ndim == 3:
+            if isinstance(self.X, list):
+                self.X_raw = np.clip(np.stack(self.X, axis=2), 0, 1)
+            else:
+                self.X_raw = np.clip(np.stack([self.X] * self.X_raw.shape[2], axis=2), 0, 1)
 
     def __update(self, frame: int) -> list:
-        self.X = self.filtre.evolve_lenia(self.X)
-        self.img.set_data(self.X)
+        # évolution (gère mode multi-canaux si `self.X` est une liste)
+        if isinstance(self.X, list):
+            self.X = self.filtre.evolve_lenia(self.X)
+            # `evolve_lenia` doit retourner une liste de plans
+            stack = np.clip(np.stack(self.X, axis=2), 0, 1)
+            # mettre à jour la grille brute
+            if hasattr(self, "X_raw") and self.X_raw.ndim == 3:
+                self.X_raw = stack.copy()
+            # préparer affichage RGB si possible
+            if stack.shape[2] >= 3:
+                display = stack[:, :, :3]
+            elif stack.shape[2] == 2:
+                zeros = np.zeros_like(stack[:, :, 0])
+                display = np.dstack((stack[:, :, 0], stack[:, :, 1], zeros))
+            else:
+                display = stack[:, :, 0]
+        else:
+            self.X = self.filtre.evolve_lenia(self.X)
+            display = self.X
+        self.img.set_data(display)
         return [self.img]
+    
+    def run(self, num_steps = 100, interpolation = 'bicubic'):
+        if self.multi_channel:
+            self.__run_multi(num_steps=num_steps, interpolation=interpolation)
+        else:
+            self.__run()
 
-    def run(self):
+    def __run(self):
         fig, ax = plt.subplots()
         self.img = ax.imshow(self.X, cmap="inferno", interpolation="none")
         ax.set_title("Lenia")
@@ -146,3 +203,27 @@ class Simulation:
             fig, self.__update, frames=200, interval=20, blit=True
         )
         plt.show()
+    
+    def __run_multi(self, num_steps = 100, interpolation = 'bicubic'):
+        # affichage et animation pour jeu multi-canaux
+        if not isinstance(self.X, list):
+            raise RuntimeError("run_multi requires multi-channel board (self.X as list)")
+        fig, ax = plt.subplots(figsize=(16, 9))
+        im = ax.imshow(np.dstack(self.X), interpolation=interpolation)
+        ax.axis('off')
+        ax.set_title("Lenia Multi-Channel")
+
+        def __update_multi(i):
+            nonlocal im
+            self.X = self.filtre.evolve_lenia(self.X)
+            im.set_array(np.dstack(self.X))
+            return (im,)
+
+        ani = animation.FuncAnimation(fig, __update_multi, frames=num_steps, interval=50, blit=False)
+        plt.show()
+
+    def place_aquarium(self, board: Board, cells: np.ndarray, x: int, y: int):
+        h, w = cells.shape[1], cells.shape[2]
+
+        for c in range(cells.shape[0]):
+            board.board[x : x + h, y : y + w, c] = cells[c]

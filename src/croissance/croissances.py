@@ -32,5 +32,3 @@ class Fonction_de_croissance:
 
     def other_function(self, x: np.ndarray) -> np.ndarray:
         return 0 + ((x >= 0.12) & (x <= 0.15)) - ((x < 0.12) | (x > 0.15))
-
-
