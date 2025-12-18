@@ -4,6 +4,7 @@ from species.species_types import Species_types
 from species.orbium import Orbium
 from species.hydrogeminium import Hydrogeminium
 from species.fish import Fish
+from species.wanderer import Wanderer
 
 
 if __name__ == "__main__":
@@ -12,10 +13,11 @@ if __name__ == "__main__":
     orbium = Orbium()
     hydrogenium = Hydrogeminium()
     fish = Fish()
-    #patch = fish.make_patch(
-    #    rotate=0,
-    #    amplitude=4.0,
-     #   normalize=True,
-    #)
-   # sim.apply_patch(patch, center=(BOARD_SIZE // 2, BOARD_SIZE // 2))
+    wanderer = Wanderer()
+    patch = wanderer.make_patch(
+        rotate=0,
+        amplitude=4.0,
+       normalize=True,
+    )
+    sim.apply_patch(patch, center=(BOARD_SIZE // 2, BOARD_SIZE // 2))
     sim.run()

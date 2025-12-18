@@ -2,7 +2,7 @@
 
 ## TODO DU MOMENT
 
--Faire FISH
+- Faire le wanderer
 
 ## TODO GENERAL
 
@@ -12,3 +12,6 @@
 - Faire une GUI pour lancer en boucle/changer de pattern/filtre etc...
 - Faire une fenetre plus grande/voir meme ou on peu changer la taille
 - Refactoring
+- Finir les autres patterns
+- Faire du machine learning avec les cellules
+- Faire les docstrings

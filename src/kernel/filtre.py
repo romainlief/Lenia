@@ -53,7 +53,7 @@ class Filtre:
             D = np.sqrt(x**2 + y**2) / r_k * len(k["b"])
             amplitudes = np.asarray(k["b"])[np.minimum(D.astype(int), len(k["b"]) - 1)]
             K_local = amplitudes * self.bell(D % 1, 0.5, 0.15)
-            K_local[D >= len(k["b"]) ] = 0
+            K_local[D >= len(k["b"])] = 0
             K_local /= K_local.sum() if K_local.sum() > 0 else 1
             kernels_fft.append(np.fft.fft2(np.fft.fftshift(K_local)))
 
@@ -109,7 +109,7 @@ class Filtre:
             Gs = [self.bell_growth(U, k["m"], k["s"]) for U, k in zip(Us, self.kernels)]
             X = np.clip(X + DT * np.mean(np.asarray(Gs), axis=0), 0, 1)
 
-        elif (
+        elif ( # Mode Aquarium
             self.kernels is not None and self.multi_channel
         ):  # Multi-canaux pour Aquarium
             fXs = [np.fft.fft2(Xi) for Xi in X]

@@ -35,14 +35,14 @@ HYDROGEMINIUM_CELLS = pattern["geminium"].get("cells", [])
 HYDROGEMINIUM_B: list = pattern["geminium"].get("b", [])
 
 # ----------- PARAMETRES FISH -----------
-FISH_R: int = pattern["fish"].get("R", 0)  
-FISH_T: int = pattern["fish"].get("T", 0) 
+FISH_R: int = pattern["fish"].get("R", 0)
+FISH_T: int = pattern["fish"].get("T", 0)
 FISH_KERNEL = pattern["fish"].get("kernels", [])
 FISH_CELLS = pattern["fish"].get("cells", [])
 
 # ----------- PARAMETRES AQUARIUM -----------
-AQUARIUM_R: int = pattern["aquarium"].get("R", 0)  
-AQUARIUM_T: int = pattern["aquarium"].get("T", 0) 
+AQUARIUM_R: int = pattern["aquarium"].get("R", 0)
+AQUARIUM_T: int = pattern["aquarium"].get("T", 0)
 AQUARIUM_KERNEL = pattern["aquarium"].get("kernels", [])
 DESTINATION_AQUARIUM = [k["c1"] for k in AQUARIUM_KERNEL]
 SOURCE_AQUARIUM = [k["c0"] for k in AQUARIUM_KERNEL]
@@ -54,6 +54,14 @@ AQUARIUM_ss = [k["s"] for k in AQUARIUM_KERNEL]
 AQUARIUM_hs = [k["h"] for k in AQUARIUM_KERNEL]
 AQUARIUM_CELLS = np.array(pattern["aquarium"]["cells"], dtype=np.float32)
 
+# ----------- PARAMETRES AQUARIUM -----------
+WANDERER_M: float = pattern["wanderer"].get("m", 0)
+WANDERER_S: float = pattern["wanderer"].get("s", 0)
+WANDERER_T: float = pattern["wanderer"].get("T", 0)
+WANDERER_R: int = pattern["wanderer"].get("R", 0)
+WANDERER_CELLS = pattern["wanderer"].get("cells", [])
+WANDERER_B: list = pattern["wanderer"].get("b", [])
+
 # ----------- PARAMETRES GENERIQUES -----------
 GENERIC_M: float = 0.5  # mu générique pour formes arbitraires
 GENERIC_S: float = 0.1  # sigma générique
@@ -61,11 +69,11 @@ GENERIC_T: int = 10
 GENERIC_R: int = 20
 
 # --- CHOIX ACTIF (orbium, hydrogeminium, ou generic) ---
-USE_ORBIUM_PARAMS: bool = False  # si True: utilise ORBIUM_M/S/T/R
+USE_ORBIUM_PARAMS: bool = False  # si True: utilise ORBIUM_M/S/T/`R
 USE_HYDROGEMINIUM_PARAMS: bool = False  # si True: utilise HYDROGEMINIUM_M/S/T/R
 USE_FISH_PARAMS: bool = False
-USE_AQUARIUM_PARAMS: bool = True
-# Si les deux sont False: utilise GENERIC_M/S/T/R
+USE_AQUARIUM_PARAMS: bool = False
+USE_WANDERER_PARAMS: bool = True
 
 # -----------CROISSANCE----------------
 # Sélectionner paramètres selon le mode actif
@@ -97,6 +105,13 @@ elif USE_AQUARIUM_PARAMS:
     ACTIVE_T: float = AQUARIUM_T
     KERNEL_TYPE = Species_types.AQUARIUM
     CHANNEL_COUNT = 3
+elif USE_WANDERER_PARAMS:
+    SIGMA: float = WANDERER_S
+    MU: float = WANDERER_M
+    ACTIVE_R: int = WANDERER_R
+    ACTIVE_T: float = WANDERER_T
+    KERNEL_TYPE = Species_types.WANDERER
+    CHANNEL_COUNT = 1
 else:
     SIGMA: float = GENERIC_S
     MU: float = GENERIC_M

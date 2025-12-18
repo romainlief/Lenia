@@ -21,10 +21,18 @@ class Simulation:
         """
         self.size = size
         self.game = Board()
-        self.multi_channel : bool = self.game.channels > 1
-        
+        self.multi_channel: bool = self.game.channels > 1
+
         if USE_AQUARIUM_PARAMS:
-            self.place_aquarium(self.game, AQUARIUM_CELLS, 1, 1)
+            self.place_aquarium(
+                self.game, AQUARIUM_CELLS, self.game.size // 2, self.game.size // 2
+            )
+            self.place_aquarium(
+                self.game, AQUARIUM_CELLS, self.game.size // 8, self.game.size // 3
+            )
+            self.place_aquarium(
+                self.game, AQUARIUM_CELLS, int(self.game.size // 3), self.game.size // 5
+            )
 
         # Choisir le kernel selon le type
         if kernel_type == Species_types.HYDROGEMINIUM:
@@ -65,7 +73,18 @@ class Simulation:
                 kernels=AQUARIUM_KERNEL,
                 multi_channel=self.multi_channel,
             )
-            self.filtre.kernels = AQUARIUM_KERNEL  # Utiliser le kernel défini pour aquarium
+            self.filtre.kernels = (
+                AQUARIUM_KERNEL  # Utiliser le kernel défini pour aquarium
+            )
+        elif kernel_type == Species_types.WANDERER:
+            b = WANDERER_B
+            self.filtre = Filtre(
+                fonction_de_croissance=Fonction_de_croissance(
+                    type=Type_de_croissance.GAUSSIENNE
+                ),
+                size=FILTRE_SIZE,
+                b=b,
+            )
         else:  # generic
             self.filtre = Filtre(
                 fonction_de_croissance=Fonction_de_croissance(
@@ -162,7 +181,9 @@ class Simulation:
             if isinstance(self.X, list):
                 self.X_raw = np.clip(np.stack(self.X, axis=2), 0, 1)
             else:
-                self.X_raw = np.clip(np.stack([self.X] * self.X_raw.shape[2], axis=2), 0, 1)
+                self.X_raw = np.clip(
+                    np.stack([self.X] * self.X_raw.shape[2], axis=2), 0, 1
+                )
 
     def __update(self, frame: int) -> list:
         # évolution (gère mode multi-canaux si `self.X` est une liste)
@@ -186,8 +207,8 @@ class Simulation:
             display = self.X
         self.img.set_data(display)
         return [self.img]
-    
-    def run(self, num_steps = 100, interpolation = 'bicubic'):
+
+    def run(self, num_steps=100, interpolation="bicubic"):
         if self.multi_channel:
             self.__run_multi(num_steps=num_steps, interpolation=interpolation)
         else:
@@ -203,14 +224,15 @@ class Simulation:
             fig, self.__update, frames=200, interval=20, blit=True
         )
         plt.show()
-    
-    def __run_multi(self, num_steps = 100, interpolation = 'bicubic'):
-        # affichage et animation pour jeu multi-canaux
+
+    def __run_multi(self, num_steps=100, interpolation="bicubic"):
         if not isinstance(self.X, list):
-            raise RuntimeError("run_multi requires multi-channel board (self.X as list)")
-        fig, ax = plt.subplots(figsize=(16, 9))
+            raise RuntimeError(
+                "run_multi requires multi-channel board (self.X as list)"
+            )
+        fig, ax = plt.subplots()
         im = ax.imshow(np.dstack(self.X), interpolation=interpolation)
-        ax.axis('off')
+        ax.axis("off")
         ax.set_title("Lenia Multi-Channel")
 
         def __update_multi(i):
@@ -219,7 +241,9 @@ class Simulation:
             im.set_array(np.dstack(self.X))
             return (im,)
 
-        ani = animation.FuncAnimation(fig, __update_multi, frames=num_steps, interval=50, blit=False)
+        ani = animation.FuncAnimation(
+            fig, __update_multi, frames=num_steps, interval=50, blit=False
+        )
         plt.show()
 
     def place_aquarium(self, board: Board, cells: np.ndarray, x: int, y: int):
