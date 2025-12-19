@@ -2,8 +2,8 @@ import numpy as np
 from const.constantes import *
 from croissance.croissances import Fonction_de_croissance
 from croissance.type_croissance import Type_de_croissance
-
-
+from species.species_types import Species_types
+from scipy.ndimage import zoom
 class Filtre:
     def __init__(
         self,
@@ -12,21 +12,23 @@ class Filtre:
         mus: list | None = None,
         sigmas: list | None = None,
         b: list | None = None,
-        kernels: list | None = None,  # pour Fish multi-kernels,
+        kernels: list[dict] | None = None,
         multi_channel: bool = False,
+        species_type: Species_types | None = None,
     ) -> None:
         self.fonction_de_croissance = fonction_de_croissance
         self.size = size
         self.mus = mus
         self.sigmas = sigmas
         self.b = b
-        self.kernels = kernels  # liste de dict {'b':..., 'm':..., 's':...} pour Fish
+        self.kernels = kernels
         self.world_size = (BOARD_SIZE, BOARD_SIZE)
         self.R = size // 2
         self.y, self.x = np.ogrid[-self.R : self.R + 1, -self.R : self.R + 1]
         self.distance = np.sqrt(self.x**2 + self.y**2)
         self.r = self.distance / self.R
         self.multi_channel = multi_channel
+        self.species_type = species_type
 
         if mus is not None and sigmas is not None:
             assert len(mus) == len(sigmas)
@@ -101,16 +103,15 @@ class Filtre:
         return self.bell(U, m, s) * 2 - 1
 
     def evolve_lenia(self, X: np.ndarray):
-        """Évolution générique pour Lenia classique ou Fish"""
         # Mode Fish
-        if self.kernels is not None and not self.multi_channel:
+        if self.kernels is not None and not self.multi_channel and self.species_type == Species_types.FISH:
             Ks = self.prepared_kernels_fft
             Us = [np.real(np.fft.ifft2(fK * np.fft.fft2(X))) for fK in Ks]
             Gs = [self.bell_growth(U, k["m"], k["s"]) for U, k in zip(Us, self.kernels)]
             X = np.clip(X + DT * np.mean(np.asarray(Gs), axis=0), 0, 1)
 
-        elif ( # Mode Aquarium
-            self.kernels is not None and self.multi_channel
+        elif (  # Mode Aquarium
+            self.kernels is not None and self.multi_channel and self.species_type == Species_types.AQUARIUM
         ):  # Multi-canaux pour Aquarium
             fXs = [np.fft.fft2(Xi) for Xi in X]
             Gs = [np.zeros_like(Xi) for Xi in X]
@@ -131,6 +132,10 @@ class Filtre:
         else:  # Lenia classique
             K = self.filtrer()
             U = np.real(np.fft.ifft2(np.fft.fft2(X) * K))
-            X = X + DT * self.fonction_de_croissance.gaussienne(U, SIGMA, MU)
-            X = np.clip(X, 0, 1)
+            if self.species_type == Species_types.WANDERER:
+                target = np.exp(-(((U - WANDERER_M) / WANDERER_S) ** 2) / 2)
+                X = np.clip(X + DT * (target - X), 0, 1)
+            else:
+                X = X + DT * self.fonction_de_croissance.gaussienne(U, SIGMA, MU)
+                X = np.clip(X, 0, 1)
         return X

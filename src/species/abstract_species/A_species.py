@@ -22,6 +22,7 @@ class ASpecies(ABC):
         normalize: bool = False,
     ) -> np.ndarray:
         arr = np.asarray(self.cells, dtype=float)
+        
 
         if rotate % 4 != 0:
             arr = np.rot90(arr, -(rotate % 4))

@@ -17,7 +17,7 @@ if __name__ == "__main__":
     patch = wanderer.make_patch(
         rotate=0,
         amplitude=4.0,
-       normalize=True,
+        normalize=True,
     )
     sim.apply_patch(patch, center=(BOARD_SIZE // 2, BOARD_SIZE // 2))
     sim.run()

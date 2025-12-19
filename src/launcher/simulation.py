@@ -27,22 +27,18 @@ class Simulation:
             self.place_aquarium(
                 self.game, AQUARIUM_CELLS, self.game.size // 2, self.game.size // 2
             )
-            self.place_aquarium(
-                self.game, AQUARIUM_CELLS, self.game.size // 8, self.game.size // 3
-            )
-            self.place_aquarium(
-                self.game, AQUARIUM_CELLS, int(self.game.size // 3), self.game.size // 5
-            )
+
 
         # Choisir le kernel selon le type
         if kernel_type == Species_types.HYDROGEMINIUM:
             b = HYDROGEMINIUM_B
             self.filtre = Filtre(
                 fonction_de_croissance=Fonction_de_croissance(
-                    type=Type_de_croissance.GAUSSIENNE
+                    type=Type_de_croissance.GAUSSIENNE,
                 ),
                 size=FILTRE_SIZE,
                 b=b,  # Utiliser le kernel multi-anneau
+                species_type=Species_types.HYDROGEMINIUM,
             )
         elif kernel_type == Species_types.ORBIUM:
             b = ORBIUM_B
@@ -52,6 +48,7 @@ class Simulation:
                 ),
                 size=FILTRE_SIZE,
                 b=b,
+                species_type=Species_types.ORBIUM,
             )
         elif kernel_type == Species_types.FISH:
             self.filtre = Filtre(
@@ -61,6 +58,7 @@ class Simulation:
                 size=FILTRE_SIZE,
                 b=None,
                 kernels=FISH_KERNEL,
+                species_type=Species_types.FISH,
             )
             self.filtre.kernels = FISH_KERNEL  # Utiliser le kernel défini pour fish
         elif kernel_type == Species_types.AQUARIUM:
@@ -72,6 +70,7 @@ class Simulation:
                 b=None,
                 kernels=AQUARIUM_KERNEL,
                 multi_channel=self.multi_channel,
+                species_type=Species_types.AQUARIUM,
             )
             self.filtre.kernels = (
                 AQUARIUM_KERNEL  # Utiliser le kernel défini pour aquarium
@@ -84,6 +83,7 @@ class Simulation:
                 ),
                 size=FILTRE_SIZE,
                 b=b,
+                species_type=Species_types.WANDERER,
             )
         else:  # generic
             self.filtre = Filtre(
@@ -93,6 +93,7 @@ class Simulation:
                 size=FILTRE_SIZE,
                 mus=MUS,
                 sigmas=SIGMAS,
+                species_type=Species_types.GENERIC,
             )
 
         # board initial (copie pour pouvoir modifier sans toucher à l'objet GameOfLifeBase)
