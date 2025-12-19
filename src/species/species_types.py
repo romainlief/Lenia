@@ -8,3 +8,4 @@ class Species_types(Enum):
     ORBIUM = "orbium"
     AQUARIUM = "aquarium"
     WANDERER = "wanderer"
+    EMITTER = "emitter"

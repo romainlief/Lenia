@@ -4,6 +4,8 @@ from croissance.croissances import Fonction_de_croissance
 from croissance.type_croissance import Type_de_croissance
 from species.species_types import Species_types
 from scipy.ndimage import zoom
+
+
 class Filtre:
     def __init__(
         self,
@@ -98,43 +100,92 @@ class Filtre:
 
         return np.fft.fft2(K)
 
-    def bell_growth(self, U, m, s):
+    def bell_growth(self, U, m, s, A=None):
         """Croissance pour Fish"""
         return self.bell(U, m, s) * 2 - 1
 
     def evolve_lenia(self, X: np.ndarray):
         # Mode Fish
-        if self.kernels is not None and not self.multi_channel and self.species_type == Species_types.FISH:
+        if (
+            self.kernels is not None
+            and not self.multi_channel
+            and self.species_type == Species_types.FISH
+        ):
             Ks = self.prepared_kernels_fft
             Us = [np.real(np.fft.ifft2(fK * np.fft.fft2(X))) for fK in Ks]
             Gs = [self.bell_growth(U, k["m"], k["s"]) for U, k in zip(Us, self.kernels)]
             X = np.clip(X + DT * np.mean(np.asarray(Gs), axis=0), 0, 1)
 
-        elif (  # Mode Aquarium
-            self.kernels is not None and self.multi_channel and self.species_type == Species_types.AQUARIUM
-        ):  # Multi-canaux pour Aquarium
+        elif (
+            self.kernels is not None
+            and self.multi_channel
+            and self.species_type in (Species_types.AQUARIUM, Species_types.EMITTER)
+        ):
+            # Multi-channel convolutional interactions (Aquarium / Emitter)
+            # X is a list of channel planes
             fXs = [np.fft.fft2(Xi) for Xi in X]
             Gs = [np.zeros_like(Xi) for Xi in X]
 
-            for i, (fK, src, dst, h) in enumerate(
-                zip(
-                    self.prepared_kernels_fft,
-                    SOURCE_AQUARIUM,
-                    DESTINATION_AQUARIUM,
-                    AQUARIUM_H,
-                )
-            ):
+            # choose constants depending on species type
+            if self.species_type == Species_types.AQUARIUM:
+                sources = SOURCE_AQUARIUM
+                dests = DESTINATION_AQUARIUM
+                hs = AQUARIUM_hs
+                ms = AQUARIUM_ms
+                ss = AQUARIUM_ss
+            else:
+                sources = SOURCE_EMITTER
+                dests = DESTINATION_EMITTER
+                hs = EMITTER_hs
+                ms = EMITTER_ms
+                ss = EMITTER_ss
+
+            # define growth/target functions (reference behaviour)
+            def growth(U, m, s, A=None):
+                return self.bell(U, m, s) * 2 - 1
+
+            def target(U, m, s, A):
+                return self.bell(U, m, s) - A
+
+            n_channels = len(X)
+            # default mapping: for 3-channel patterns use [growth,growth,target]
+            if n_channels == 3 and self.species_type == Species_types.EMITTER:
+                funcs = [growth, growth, target]
+            else:
+                funcs = [growth] * n_channels
+
+            # for each kernel, compute its convolution on the source channel
+            for i, (fK, k) in enumerate(zip(self.prepared_kernels_fft, self.kernels)):
+                src = sources[i]
+                dst = dests[i]
+                h = hs[i]
+                m = ms[i]
+                s = ss[i]
                 U = np.real(np.fft.ifft2(fK * fXs[src]))
-                A = self.bell_growth(U, AQUARIUM_ms[i], AQUARIUM_ss[i])
-                Gs[dst] += h * A
+                # select function by destination channel
+                func = funcs[dst] if dst < len(funcs) else funcs[0]
+                if func is target:
+                    A_dst = X[dst]
+                    Gi = func(U, m, s, A_dst)
+                else:
+                    Gi = func(U, m, s, None)
+                Gs[dst] += h * Gi
 
             return [np.clip(Xi + DT * Gi, 0, 1) for Xi, Gi in zip(X, Gs)]
         else:  # Lenia classique
             K = self.filtrer()
             U = np.real(np.fft.ifft2(np.fft.fft2(X) * K))
             if self.species_type == Species_types.WANDERER:
-                target = np.exp(-(((U - WANDERER_M) / WANDERER_S) ** 2) / 2)
-                X = np.clip(X + DT * (target - X), 0, 1)
+                X = np.clip(
+                    X
+                    + DT
+                    * (
+                        self.fonction_de_croissance.target(U, WANDERER_M, WANDERER_S)
+                        - X
+                    ),
+                    0,
+                    1,
+                )
             else:
                 X = X + DT * self.fonction_de_croissance.gaussienne(U, SIGMA, MU)
                 X = np.clip(X, 0, 1)

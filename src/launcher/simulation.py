@@ -27,6 +27,11 @@ class Simulation:
             self.place_aquarium(
                 self.game, AQUARIUM_CELLS, self.game.size // 2, self.game.size // 2
             )
+        
+        if USE_EMITTER_PARAMS:
+            self.place_emitter(
+                self.game, EMITTER_CELLS, self.game.size // 2, self.game.size // 2
+            )
 
 
         # Choisir le kernel selon le type
@@ -84,6 +89,20 @@ class Simulation:
                 size=FILTRE_SIZE,
                 b=b,
                 species_type=Species_types.WANDERER,
+            )
+        elif kernel_type == Species_types.EMITTER:
+            self.filtre = Filtre(
+                fonction_de_croissance=Fonction_de_croissance(
+                    type=Type_de_croissance.GAUSSIENNE
+                ),
+                size=FILTRE_SIZE,
+                b=None,
+                kernels=EMITTER_KERNEL,
+                multi_channel=self.multi_channel,
+                species_type=Species_types.EMITTER,
+            )
+            self.filtre.kernels = (
+                EMITTER_KERNEL  # Utiliser le kernel défini pour emitter
             )
         else:  # generic
             self.filtre = Filtre(
@@ -248,6 +267,12 @@ class Simulation:
         plt.show()
 
     def place_aquarium(self, board: Board, cells: np.ndarray, x: int, y: int):
+        h, w = cells.shape[1], cells.shape[2]
+
+        for c in range(cells.shape[0]):
+            board.board[x : x + h, y : y + w, c] = cells[c]
+
+    def place_emitter(self, board: Board, cells: np.ndarray, x: int, y: int):
         h, w = cells.shape[1], cells.shape[2]
 
         for c in range(cells.shape[0]):

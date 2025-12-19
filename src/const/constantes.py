@@ -54,13 +54,27 @@ AQUARIUM_ss = [k["s"] for k in AQUARIUM_KERNEL]
 AQUARIUM_hs = [k["h"] for k in AQUARIUM_KERNEL]
 AQUARIUM_CELLS = np.array(pattern["aquarium"]["cells"], dtype=np.float32)
 
-# ----------- PARAMETRES AQUARIUM -----------
+# ----------- PARAMETRES WANDERER -----------
 WANDERER_M: float = pattern["wanderer"].get("m", 0)
 WANDERER_S: float = pattern["wanderer"].get("s", 0)
 WANDERER_T: float = pattern["wanderer"].get("T", 0)
 WANDERER_R: int = pattern["wanderer"].get("R", 0)
 WANDERER_CELLS = pattern["wanderer"].get("cells", [])
 WANDERER_B: list = pattern["wanderer"].get("b", [])
+
+# ----------- PARAMETRES EMITTER -----------
+EMITTER_R: int = pattern["emitter"].get("R", 0)
+EMITTER_T: int = pattern["emitter"].get("T", 0)
+EMITTER_KERNEL = pattern["emitter"].get("kernels", [])
+DESTINATION_EMITTER = [k["c1"] for k in EMITTER_KERNEL]
+SOURCE_EMITTER = [k["c0"] for k in EMITTER_KERNEL]
+EMITTER_H = [k["h"] for k in EMITTER_KERNEL]
+EMITTER_bs = [k["b"] for k in EMITTER_KERNEL]
+EMITTER_rs = [EMITTER_R * k["r"] for k in EMITTER_KERNEL]
+EMITTER_ms = [k["m"] for k in EMITTER_KERNEL]
+EMITTER_ss = [k["s"] for k in EMITTER_KERNEL]
+EMITTER_hs = [k["h"] for k in EMITTER_KERNEL]
+EMITTER_CELLS = np.array(pattern["emitter"]["cells"], dtype=np.float32)
 
 # ----------- PARAMETRES GENERIQUES -----------
 GENERIC_M: float = 0.5  # mu générique pour formes arbitraires
@@ -74,6 +88,7 @@ USE_HYDROGEMINIUM_PARAMS: bool = False  # si True: utilise HYDROGEMINIUM_M/S/T/R
 USE_FISH_PARAMS: bool = False
 USE_AQUARIUM_PARAMS: bool = False
 USE_WANDERER_PARAMS: bool = True
+USE_EMITTER_PARAMS: bool = False
 
 # -----------CROISSANCE----------------
 # Sélectionner paramètres selon le mode actif
@@ -104,6 +119,13 @@ elif USE_AQUARIUM_PARAMS:
     ACTIVE_R: int = AQUARIUM_R
     ACTIVE_T: float = AQUARIUM_T
     KERNEL_TYPE = Species_types.AQUARIUM
+    CHANNEL_COUNT = 3
+elif USE_EMITTER_PARAMS:
+    SIGMA: float | None = None
+    MU: float | None = None
+    ACTIVE_R: int = EMITTER_R
+    ACTIVE_T: float = EMITTER_T
+    KERNEL_TYPE = Species_types.EMITTER
     CHANNEL_COUNT = 3
 elif USE_WANDERER_PARAMS:
     SIGMA: float = WANDERER_S
