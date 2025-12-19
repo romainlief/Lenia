@@ -1,9 +1,29 @@
 import numpy as np
-from const.constantes import *
+from const.constantes import (
+    SIGMA,
+    MU,
+    BOARD_SIZE,
+    DT,
+    WANDERER_M,
+    WANDERER_S,
+    SOURCE_AQUARIUM,
+    DESTINATION_AQUARIUM,
+    AQUARIUM_hs,
+    AQUARIUM_ms,
+    AQUARIUM_ss,
+    SOURCE_EMITTER,
+    DESTINATION_EMITTER,
+    EMITTER_hs,
+    EMITTER_ms,
+    EMITTER_ss,
+    SOURCE_PACMAN,
+    DESTINATION_PACMAN,
+    PACMAN_hs,
+    PACMAN_ms,
+    PACMAN_ss,
+)
 from croissance.croissances import Fonction_de_croissance
-from croissance.type_croissance import Type_de_croissance
 from species.species_types import Species_types
-from scipy.ndimage import zoom
 
 
 class Filtre:
@@ -119,9 +139,10 @@ class Filtre:
         elif (
             self.kernels is not None
             and self.multi_channel
-            and self.species_type in (Species_types.AQUARIUM, Species_types.EMITTER)
+            and self.species_type
+            in (Species_types.AQUARIUM, Species_types.EMITTER, Species_types.PACMAN)
         ):
-            # Multi-channel convolutional interactions (Aquarium / Emitter)
+            # Multi-channel convolutional interactions (Aquarium / Emitter / Pacman)
             # X is a list of channel planes
             fXs = [np.fft.fft2(Xi) for Xi in X]
             Gs = [np.zeros_like(Xi) for Xi in X]
@@ -133,19 +154,29 @@ class Filtre:
                 hs = AQUARIUM_hs
                 ms = AQUARIUM_ms
                 ss = AQUARIUM_ss
-            else:
+            elif self.species_type == Species_types.EMITTER:
                 sources = SOURCE_EMITTER
                 dests = DESTINATION_EMITTER
                 hs = EMITTER_hs
                 ms = EMITTER_ms
                 ss = EMITTER_ss
+            elif self.species_type == Species_types.PACMAN:
+                sources = SOURCE_PACMAN
+                dests = DESTINATION_PACMAN
+                hs = PACMAN_hs
+                ms = PACMAN_ms
+                ss = PACMAN_ss
+            else:
+                raise ValueError("Species type non supporté pour multi-channel.")
 
-            # define growth/target functions (reference behaviour)
             def growth(U, m, s, A=None):
                 return self.bell(U, m, s) * 2 - 1
 
             def target(U, m, s, A):
                 return self.bell(U, m, s) - A
+            
+            def soft_clip(x, vmin, vmax):
+                return 1 / (1 + np.exp(-4 * (x - 0.5)))
 
             n_channels = len(X)
             # default mapping: for 3-channel patterns use [growth,growth,target]
@@ -170,8 +201,10 @@ class Filtre:
                 else:
                     Gi = func(U, m, s, None)
                 Gs[dst] += h * Gi
-
-            return [np.clip(Xi + DT * Gi, 0, 1) for Xi, Gi in zip(X, Gs)]
+            if self.species_type == Species_types.PACMAN:
+                return [soft_clip(Xi + DT * Gi, 0, 1) for Xi, Gi in zip(X, Gs)]
+            else:
+                return [np.clip(Xi + DT * Gi, 0, 1) for Xi, Gi in zip(X, Gs)]
         else:  # Lenia classique
             K = self.filtrer()
             U = np.real(np.fft.ifft2(np.fft.fft2(X) * K))

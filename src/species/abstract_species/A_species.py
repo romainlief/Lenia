@@ -1,7 +1,6 @@
 import numpy as np
 from abc import ABC
 from typing import Any, Dict, List
-from abc import abstractmethod
 from scipy.ndimage import shift
 
 class ASpecies(ABC):

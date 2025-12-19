@@ -1,7 +1,25 @@
 from board.board import Board
 from croissance.croissances import Fonction_de_croissance
 from kernel.filtre import Filtre
-from const.constantes import *
+from const.constantes import (
+    FILTRE_SIZE,
+    ORBIUM_B,
+    MUS,
+    SIGMAS,
+    USE_AQUARIUM_PARAMS,
+    AQUARIUM_CELLS,
+    AQUARIUM_KERNEL,
+    USE_EMITTER_PARAMS,
+    EMITTER_CELLS,
+    EMITTER_KERNEL,
+    HYDROGEMINIUM_B,
+    BOARD_SIZE,
+    FISH_KERNEL,
+    WANDERER_B,
+    USE_PACMAN_PARAMS,
+    PACMAN_CELLS,
+    PACMAN_KERNEL,
+)
 from croissance.type_croissance import Type_de_croissance
 
 import numpy as np
@@ -27,12 +45,16 @@ class Simulation:
             self.place_aquarium(
                 self.game, AQUARIUM_CELLS, self.game.size // 2, self.game.size // 2
             )
-        
+
         if USE_EMITTER_PARAMS:
             self.place_emitter(
                 self.game, EMITTER_CELLS, self.game.size // 2, self.game.size // 2
             )
 
+        if USE_PACMAN_PARAMS:
+            self.place_pacman(
+                self.game, PACMAN_CELLS, self.game.size // 4, self.game.size // 4
+            )
 
         # Choisir le kernel selon le type
         if kernel_type == Species_types.HYDROGEMINIUM:
@@ -104,6 +126,18 @@ class Simulation:
             self.filtre.kernels = (
                 EMITTER_KERNEL  # Utiliser le kernel défini pour emitter
             )
+        elif kernel_type == Species_types.PACMAN:
+            self.filtre = Filtre(
+                fonction_de_croissance=Fonction_de_croissance(
+                    type=Type_de_croissance.GAUSSIENNE
+                ),
+                size=FILTRE_SIZE,
+                b=None,
+                kernels=PACMAN_KERNEL,
+                multi_channel=self.multi_channel,
+                species_type=Species_types.PACMAN,
+            )
+            self.filtre.kernels = PACMAN_KERNEL
         else:  # generic
             self.filtre = Filtre(
                 fonction_de_croissance=Fonction_de_croissance(
@@ -127,7 +161,7 @@ class Simulation:
 
     def apply_patch(
         self,
-        patch: np.ndarray,
+        patch: np.ndarray | None = None,
         center: tuple | None = None,
         rotate: int = 0,
         amplitude: float = 1.0,
@@ -142,6 +176,8 @@ class Simulation:
         amplitude : facteur multiplicatif appliqué au patch
         normalize : si True, normalise le patch à 1 avant amplitude
         """
+        if patch is None:
+            return
 
         arr = np.array(patch, dtype=float)
         if rotate % 4 != 0:
@@ -258,7 +294,9 @@ class Simulation:
         def __update_multi(i):
             nonlocal im
             self.X = self.filtre.evolve_lenia(self.X)
-            im.set_array(np.dstack(self.X))
+            im.set_array(np.dstack([ self.X[1], self.X[2], self.X[0] ]))
+            # a choisir entre les deux styles d'affichage:
+            #im.set_array(np.dstack(self.X))
             return (im,)
 
         ani = animation.FuncAnimation(
@@ -266,6 +304,7 @@ class Simulation:
         )
         plt.show()
 
+    ### 3 fois la même fonction TODO: à factoriser plus tard ###
     def place_aquarium(self, board: Board, cells: np.ndarray, x: int, y: int):
         h, w = cells.shape[1], cells.shape[2]
 
@@ -273,6 +312,12 @@ class Simulation:
             board.board[x : x + h, y : y + w, c] = cells[c]
 
     def place_emitter(self, board: Board, cells: np.ndarray, x: int, y: int):
+        h, w = cells.shape[1], cells.shape[2]
+
+        for c in range(cells.shape[0]):
+            board.board[x : x + h, y : y + w, c] = cells[c]
+
+    def place_pacman(self, board: Board, cells: np.ndarray, x: int, y: int):
         h, w = cells.shape[1], cells.shape[2]
 
         for c in range(cells.shape[0]):

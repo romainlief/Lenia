@@ -1,6 +1,5 @@
 from .pattern import pattern
 from species.species_types import Species_types
-from typing import Any
 import numpy as np
 
 # -----------BOARD---------------------
@@ -76,19 +75,34 @@ EMITTER_ss = [k["s"] for k in EMITTER_KERNEL]
 EMITTER_hs = [k["h"] for k in EMITTER_KERNEL]
 EMITTER_CELLS = np.array(pattern["emitter"]["cells"], dtype=np.float32)
 
+# ----------- PARAMETRES PACMAN -----------
+PACMAN_R: int = pattern["pacman"].get("R", 0)
+PACMAN_T: int = pattern["pacman"].get("T", 0)
+PACMAN_KERNEL = pattern["pacman"].get("kernels", [])
+DESTINATION_PACMAN = [k["c1"] for k in PACMAN_KERNEL]
+SOURCE_PACMAN = [k["c0"] for k in PACMAN_KERNEL]
+PACMAN_H = [k["h"] for k in PACMAN_KERNEL]
+PACMAN_bs = [k["b"] for k in PACMAN_KERNEL]
+PACMAN_rs = [PACMAN_R * k["r"] for k in PACMAN_KERNEL]
+PACMAN_ms = [k["m"] for k in PACMAN_KERNEL]
+PACMAN_ss = [k["s"] for k in PACMAN_KERNEL]
+PACMAN_hs = [k["h"] for k in PACMAN_KERNEL]
+PACMAN_CELLS = np.array(pattern["pacman"]["cells"], dtype=np.float32)
+
 # ----------- PARAMETRES GENERIQUES -----------
 GENERIC_M: float = 0.5  # mu générique pour formes arbitraires
 GENERIC_S: float = 0.1  # sigma générique
 GENERIC_T: int = 10
 GENERIC_R: int = 20
 
-# --- CHOIX ACTIF (orbium, hydrogeminium, ou generic) ---
-USE_ORBIUM_PARAMS: bool = False  # si True: utilise ORBIUM_M/S/T/`R
-USE_HYDROGEMINIUM_PARAMS: bool = False  # si True: utilise HYDROGEMINIUM_M/S/T/R
+# --- CHOIX ACTIF ---
+USE_ORBIUM_PARAMS: bool = False
+USE_HYDROGEMINIUM_PARAMS: bool = False
 USE_FISH_PARAMS: bool = False
 USE_AQUARIUM_PARAMS: bool = False
-USE_WANDERER_PARAMS: bool = True
+USE_WANDERER_PARAMS: bool = False
 USE_EMITTER_PARAMS: bool = False
+USE_PACMAN_PARAMS: bool = True
 
 # -----------CROISSANCE----------------
 # Sélectionner paramètres selon le mode actif
@@ -134,6 +148,13 @@ elif USE_WANDERER_PARAMS:
     ACTIVE_T: float = WANDERER_T
     KERNEL_TYPE = Species_types.WANDERER
     CHANNEL_COUNT = 1
+elif USE_PACMAN_PARAMS:
+    SIGMA: float | None = None
+    MU: float | None = None
+    ACTIVE_R: int = PACMAN_R
+    ACTIVE_T: float = PACMAN_T
+    KERNEL_TYPE = Species_types.PACMAN
+    CHANNEL_COUNT = 3
 else:
     SIGMA: float = GENERIC_S
     MU: float = GENERIC_M
@@ -148,22 +169,6 @@ DT: float = 1.0 / ACTIVE_T
 # -----------FILTRE--------------------
 FILTRE_SIZE: int = 2 * ACTIVE_R + 1
 
-# ------------KERNEL----------------
-# Mus est la liste des positions des pics du kernel
-# Sigmas est la liste des largeurs des pics du kernel
-
-# Kernel à une coquille
-# MUS = [0.3]
-# SIGMAS = [0.05]
-
-# Kernel à deux coquilles
-# MUS = [0.3, 0.7]
-# SIGMAS = [0.05, 0.1]
-
 # -------------Kernel du code référence pour generic-----------------
 MUS = [0.5]
 SIGMAS = [0.15]
-
-# Kernel nerveux
-# MUS = [0.2]
-# SIGMAS = [0.03]

@@ -1,6 +1,5 @@
 import numpy as np
-from matplotlib import pyplot as plt
-from const.constantes import *
+from const.constantes import SIGMA, MU
 from croissance.type_croissance import Type_de_croissance
 
 

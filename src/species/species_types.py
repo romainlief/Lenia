@@ -9,3 +9,4 @@ class Species_types(Enum):
     AQUARIUM = "aquarium"
     WANDERER = "wanderer"
     EMITTER = "emitter"
+    PACMAN = "pacman"
