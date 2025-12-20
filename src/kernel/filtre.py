@@ -27,9 +27,14 @@ from species.species_types import Species_types
 
 
 class Filtre:
+    """
+    Filtre class to handle convolution and evolution of the world state
+    using specified growth functions and kernels.
+    """
+
     def __init__(
         self,
-        fonction_de_croissance: Statistical_growth_function,
+        growth_function: Statistical_growth_function,
         size: int,
         mus: list | None = None,
         sigmas: list | None = None,
@@ -38,7 +43,20 @@ class Filtre:
         multi_channel: bool = False,
         species_type: Species_types | None = None,
     ) -> None:
-        self.fonction_de_croissance = fonction_de_croissance
+        """
+        Initialise the filter with given parameters
+
+        Args:
+            growth_function (Statistical_growth_function): The growth function to use
+            size (int): The size of the filter
+            mus (list | None, optional): The means for the growth function. Defaults to None.
+            sigmas (list | None, optional): The standard deviations for the growth function. Defaults to None.
+            b (list | None, optional): The amplitudes for the growth function. Defaults to None.
+            kernels (list[dict] | None, optional): The kernels for multi-kernel convolution. Defaults to None.
+            multi_channel (bool, optional): Whether the filter is multi-channel. Defaults to False.
+            species_type (Species_types | None, optional): The type of species. Defaults to None.
+        """
+        self.growth_function = growth_function
         self.size = size
         self.mus = mus
         self.sigmas = sigmas
@@ -58,10 +76,14 @@ class Filtre:
         # Préparation des kernels FFT dès l'init pour Fish
         self.prepared_kernels_fft: list[np.ndarray] | None = None
         if self.kernels is not None:
-            self.prepared_kernels_fft = self.prepare_fish_kernels_fft()
+            self.prepared_kernels_fft = self.prepare_kernels_fft()
 
-    def prepare_fish_kernels_fft(self) -> list:
-        """Prépare les kernels FFT pour Fish (multi-kernels)"""
+    def prepare_kernels_fft(self) -> list:
+        """
+        Prepare the kernels FFT for multi-kernels convolution
+        Returns:
+            list: List of kernels in FFT format
+        """
         H, W = self.world_size
         mid_h, mid_w = H // 2, W // 2
         kernels_fft = []
@@ -72,21 +94,23 @@ class Filtre:
             # distance scaled by kernel radius and number of rings
             D = np.sqrt(x**2 + y**2) / r_k * len(k["b"])
             amplitudes = np.asarray(k["b"])[np.minimum(D.astype(int), len(k["b"]) - 1)]
-            K_local = amplitudes * self.fonction_de_croissance.target(
-                D % 1, 0.5, 0.15, None
-            )
+            K_local = amplitudes * self.growth_function.target(D % 1, 0.5, 0.15, None)
             K_local[D >= len(k["b"])] = 0
             K_local /= K_local.sum() if K_local.sum() > 0 else 1
             kernels_fft.append(np.fft.fft2(np.fft.fftshift(K_local)))
         return kernels_fft
 
     def filtrer(self):
-        """Retourne le kernel FFT pour Lenia classique ou liste de FFT pour Fish"""
-        # Mode Fish
+        """
+        Apply the filter to the world state X
+        Returns:
+            np.ndarray: The filtered world state in FFT format
+        """
+        # Fish mode
         if self.kernels is not None:
             return self.prepared_kernels_fft
 
-        # Mode Lenia classique
+        # Classic Lenia mode
         H, W = self.world_size
         K_local = np.zeros_like(self.distance)
 
@@ -95,13 +119,11 @@ class Filtre:
             D = self.distance / self.R * len(b_arr)
             ring_indices = np.minimum(D.astype(int), len(b_arr) - 1)
             amplitudes = b_arr[ring_indices]
-            K_local = amplitudes * self.fonction_de_croissance.target(
-                D % 1, 0.5, 0.15, None
-            )
+            K_local = amplitudes * self.growth_function.target(D % 1, 0.5, 0.15, None)
             K_local[D >= len(b_arr)] = 0
         elif self.mus is not None and self.sigmas is not None:
             for mu, sigma in zip(self.mus, self.sigmas):
-                K_local += self.fonction_de_croissance.gauss_kernel(self.r, mu, sigma)
+                K_local += self.growth_function.gauss_kernel(self.r, mu, sigma)
             K_local[self.r > 1] = 0
         else:
             raise ValueError("If no b, mus and sigmas must be provided")
@@ -109,7 +131,7 @@ class Filtre:
         # Normalisation
         K_local /= K_local.sum() if K_local.sum() > 0 else 1
 
-        # Padding au format de la grille
+        # Padding to grid format
         K = np.zeros((H, W), dtype=float)
         kh, kw = K_local.shape
         cy, cx = kh // 2, kw // 2
@@ -119,8 +141,20 @@ class Filtre:
 
         return np.fft.fft2(K)
 
-    def evolve_lenia(self, X: np.ndarray):
-        if (  # Mode Fish
+    def evolve_lenia(self, X: np.ndarray) -> np.ndarray | list[np.ndarray]:
+        """
+        Evolve the world state X by one time step using the filter
+
+        Args:
+            X (np.ndarray): The current world state
+
+        Raises:
+            ValueError: If the species type is not supported for multi-channel.
+
+        Returns:
+            np.ndarray | list[np.ndarray]: The evolved world state after one time step
+        """
+        if (  # Fish mode
             self.kernels is not None
             and not self.multi_channel
             and self.species_type == Species_types.FISH
@@ -128,7 +162,7 @@ class Filtre:
             Ks = self.prepared_kernels_fft
             Us = [np.real(np.fft.ifft2(fK * np.fft.fft2(X))) for fK in Ks]
             Gs = [
-                self.fonction_de_croissance.bell_growth(U, k["m"], k["s"])
+                self.growth_function.bell_growth(U, k["m"], k["s"])
                 for U, k in zip(Us, self.kernels)
             ]
             X = np.clip(X + DT * np.mean(np.asarray(Gs), axis=0), 0, 1)
@@ -169,12 +203,12 @@ class Filtre:
             n_channels = len(X)
             if n_channels == 3 and self.species_type == Species_types.EMITTER:
                 funcs = [
-                    self.fonction_de_croissance.bell_growth,
-                    self.fonction_de_croissance.bell_growth,
-                    self.fonction_de_croissance.target,
+                    self.growth_function.bell_growth,
+                    self.growth_function.bell_growth,
+                    self.growth_function.target,
                 ]
             else:
-                funcs = [self.fonction_de_croissance.bell_growth] * n_channels
+                funcs = [self.growth_function.bell_growth] * n_channels
 
             # for each kernel, compute its convolution on the source channel
             for i, (fK, k) in enumerate(zip(self.prepared_kernels_fft, self.kernels)):
@@ -194,7 +228,7 @@ class Filtre:
                 Gs[dst] += h * Gi
             if self.species_type == Species_types.PACMAN:
                 return [
-                    self.fonction_de_croissance.soft_clip(Xi + DT * Gi, 0, 1)
+                    self.growth_function.soft_clip(Xi + DT * Gi, 0, 1)
                     for Xi, Gi in zip(X, Gs)
                 ]
             else:
@@ -207,15 +241,12 @@ class Filtre:
                     X
                     + DT
                     * (
-                        self.fonction_de_croissance.target(
-                            U, WANDERER_M, WANDERER_S, None
-                        )
-                        - X
+                        self.growth_function.target(U, WANDERER_M, WANDERER_S, None) - X
                     ),
                     0,
                     1,
                 )
             else:
-                X = X + DT * self.fonction_de_croissance.gaussienne(U, SIGMA, MU)
+                X = X + DT * self.growth_function.gaussienne(U, SIGMA, MU)
                 X = np.clip(X, 0, 1)
         return X

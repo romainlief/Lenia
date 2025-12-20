@@ -7,7 +7,16 @@ from const.constantes import (
 
 
 class Fish(ASpecies):
+    """
+    Fish species class.
+
+    Args:
+        ASpecies (ASpecies): Abstract Species base class.
+    """
     def __init__(self) -> None:
+        """
+        Initialise the Fish species with predefined attributes.
+        """
         super().__init__()
         self.name = "fish"
         self.r: float | None = FISH_R

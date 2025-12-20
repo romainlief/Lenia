@@ -1,5 +1,7 @@
 from typing import Any, Dict
-
+"""
+This module defines predefined patterns for the Lenia simulation.    
+"""
 pattern: Dict[str, Dict[str, Any]] = {}
 pattern["bosco"] = {
     "name": "Bosco",

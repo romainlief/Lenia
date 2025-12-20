@@ -4,7 +4,13 @@ from typing import Any, Dict, List
 from scipy.ndimage import shift
 
 class ASpecies(ABC):
+    """
+    Abstract Species class.
+    """
     def __init__(self) -> None:
+        """
+        Initialise the abstract species with default attributes.
+        """
         self.name: str | None
         self.r: float | None
         self.t: float | None
@@ -20,6 +26,17 @@ class ASpecies(ABC):
         amplitude: float = 1.0,
         normalize: bool = False,
     ) -> np.ndarray:
+        """
+        Create a patch of the species with specified rotation and amplitude.
+        
+        Args:
+            rotate (int, optional): Rotation angle in multiples of 90 degrees. Defaults to 0.
+            amplitude (float, optional): Amplitude scaling factor. Defaults to 1.0.
+            normalize (bool, optional): Whether to normalize the patch. Defaults to False.
+
+        Returns:
+            np.ndarray: The generated patch array.
+        """
         arr = np.asarray(self.cells, dtype=float)
         
 
@@ -30,7 +47,7 @@ class ASpecies(ABC):
             mx = arr.max()
             if mx > 0:
                 arr = arr / mx
-        # centre de masse CONTINU
+        # Continuous center of mass
         yy, xx = np.indices(arr.shape)
         mass = arr.sum()
 
@@ -41,14 +58,14 @@ class ASpecies(ABC):
             cy = (arr.shape[0] - 1) / 2
             cx = (arr.shape[1] - 1) / 2
 
-        # centre géométrique continu
+        # Continuous geometric center
         gy = (arr.shape[0] - 1) / 2
         gx = (arr.shape[1] - 1) / 2
-        # décalage CONTINU (clé Lenia)
+        # Continuous offset (Lenia key feature)
         dy = gy - cy
         dx = gx - cx
 
-        # interpolation bilinéaire (order=1)
+        # Bilinear interpolation (order=1)
         arr = shift(
             arr,
             shift=(dy, dx),

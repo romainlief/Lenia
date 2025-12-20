@@ -69,7 +69,7 @@ class Simulation:
         if kernel_type == Species_types.HYDROGEMINIUM:
             b = HYDROGEMINIUM_B
             self.filtre = Filtre(
-                fonction_de_croissance=Statistical_growth_function(
+                growth_function=Statistical_growth_function(
                     type=Growth_type.GAUSSIENNE,
                 ),
                 size=FILTRE_SIZE,
@@ -79,7 +79,7 @@ class Simulation:
         elif kernel_type == Species_types.ORBIUM:
             b = ORBIUM_B
             self.filtre = Filtre(
-                fonction_de_croissance=Statistical_growth_function(
+                growth_function=Statistical_growth_function(
                     type=Growth_type.GAUSSIENNE
                 ),
                 size=FILTRE_SIZE,
@@ -88,7 +88,7 @@ class Simulation:
             )
         elif kernel_type == Species_types.FISH:
             self.filtre = Filtre(
-                fonction_de_croissance=Statistical_growth_function(
+                growth_function=Statistical_growth_function(
                     type=Growth_type.GAUSSIENNE
                 ),
                 size=FILTRE_SIZE,
@@ -99,7 +99,7 @@ class Simulation:
             self.filtre.kernels = FISH_KERNEL
         elif kernel_type == Species_types.AQUARIUM:
             self.filtre = Filtre(
-                fonction_de_croissance=Statistical_growth_function(
+                growth_function=Statistical_growth_function(
                     type=Growth_type.GAUSSIENNE
                 ),
                 size=FILTRE_SIZE,
@@ -112,7 +112,7 @@ class Simulation:
         elif kernel_type == Species_types.WANDERER:
             b = WANDERER_B
             self.filtre = Filtre(
-                fonction_de_croissance=Statistical_growth_function(
+                growth_function=Statistical_growth_function(
                     type=Growth_type.GAUSSIENNE
                 ),
                 size=FILTRE_SIZE,
@@ -121,7 +121,7 @@ class Simulation:
             )
         elif kernel_type == Species_types.EMITTER:
             self.filtre = Filtre(
-                fonction_de_croissance=Statistical_growth_function(
+                growth_function=Statistical_growth_function(
                     type=Growth_type.GAUSSIENNE
                 ),
                 size=FILTRE_SIZE,
@@ -133,7 +133,7 @@ class Simulation:
             self.filtre.kernels = EMITTER_KERNEL 
         elif kernel_type == Species_types.PACMAN:
             self.filtre = Filtre(
-                fonction_de_croissance=Statistical_growth_function(
+                growth_function=Statistical_growth_function(
                     type=Growth_type.GAUSSIENNE
                 ),
                 size=FILTRE_SIZE,
@@ -145,7 +145,7 @@ class Simulation:
             self.filtre.kernels = PACMAN_KERNEL
         else:  # generic
             self.filtre = Filtre(
-                fonction_de_croissance=Statistical_growth_function(
+                growth_function=Statistical_growth_function(
                     type=Growth_type.GAUSSIENNE
                 ),
                 size=FILTRE_SIZE,
