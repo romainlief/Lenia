@@ -56,7 +56,7 @@ class Filtre:
             assert len(mus) == len(sigmas)
 
         # Préparation des kernels FFT dès l'init pour Fish
-        self.prepared_kernels_fft = None
+        self.prepared_kernels_fft : list[np.ndarray] | None = None
         if self.kernels is not None:
             self.prepared_kernels_fft = self.prepare_fish_kernels_fft()
 
@@ -64,7 +64,7 @@ class Filtre:
         """Gaussian bell: exp(-((x-m)/s)^2 / 2)"""
         return np.exp(-(((x - m) / s) ** 2) / 2)
 
-    def prepare_fish_kernels_fft(self):
+    def prepare_fish_kernels_fft(self) -> list:
         """Prépare les kernels FFT pour Fish (multi-kernels)"""
         H, W = self.world_size
         mid_h, mid_w = H // 2, W // 2
@@ -80,7 +80,6 @@ class Filtre:
             K_local[D >= len(k["b"])] = 0
             K_local /= K_local.sum() if K_local.sum() > 0 else 1
             kernels_fft.append(np.fft.fft2(np.fft.fftshift(K_local)))
-
         return kernels_fft
 
     def filtrer(self):
@@ -105,7 +104,7 @@ class Filtre:
                 K_local += self.fonction_de_croissance.gauss_kernel(self.r, mu, sigma)
             K_local[self.r > 1] = 0
         else:
-            raise ValueError("Soit b, soit mus/sigmas doivent être fournis")
+            raise ValueError("If no b, mus and sigmas must be provided")
 
         # Normalisation
         K_local /= K_local.sum() if K_local.sum() > 0 else 1
@@ -125,8 +124,7 @@ class Filtre:
         return self.bell(U, m, s) * 2 - 1
 
     def evolve_lenia(self, X: np.ndarray):
-        # Mode Fish
-        if (
+        if (  # Mode Fish
             self.kernels is not None
             and not self.multi_channel
             and self.species_type == Species_types.FISH
@@ -136,13 +134,13 @@ class Filtre:
             Gs = [self.bell_growth(U, k["m"], k["s"]) for U, k in zip(Us, self.kernels)]
             X = np.clip(X + DT * np.mean(np.asarray(Gs), axis=0), 0, 1)
 
-        elif (
+        elif (  # Multi-channel mode (Aquarium / Emitter / Pacman)
             self.kernels is not None
             and self.multi_channel
             and self.species_type
             in (Species_types.AQUARIUM, Species_types.EMITTER, Species_types.PACMAN)
         ):
-            # Multi-channel convolutional interactions (Aquarium / Emitter / Pacman)
+            # Multi-channel convolutional interactions
             # X is a list of channel planes
             fXs = [np.fft.fft2(Xi) for Xi in X]
             Gs = [np.zeros_like(Xi) for Xi in X]
@@ -174,12 +172,11 @@ class Filtre:
 
             def target(U, m, s, A):
                 return self.bell(U, m, s) - A
-            
+
             def soft_clip(x, vmin, vmax):
                 return 1 / (1 + np.exp(-4 * (x - 0.5)))
 
             n_channels = len(X)
-            # default mapping: for 3-channel patterns use [growth,growth,target]
             if n_channels == 3 and self.species_type == Species_types.EMITTER:
                 funcs = [growth, growth, target]
             else:
@@ -209,16 +206,7 @@ class Filtre:
             K = self.filtrer()
             U = np.real(np.fft.ifft2(np.fft.fft2(X) * K))
             if self.species_type == Species_types.WANDERER:
-                X = np.clip(
-                    X
-                    + DT
-                    * (
-                        self.fonction_de_croissance.target(U, WANDERER_M, WANDERER_S)
-                        - X
-                    ),
-                    0,
-                    1,
-                )
+                X = np.clip(X + DT * (self.fonction_de_croissance.target(U, WANDERER_M, WANDERER_S) - X), 0, 1)
             else:
                 X = X + DT * self.fonction_de_croissance.gaussienne(U, SIGMA, MU)
                 X = np.clip(X, 0, 1)

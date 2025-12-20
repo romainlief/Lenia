@@ -51,17 +51,17 @@ class Simulation:
         self.multi_channel: bool = self.game.channels > 1
 
         if USE_AQUARIUM_PARAMS:
-            self.place_aquarium(
+            self.place_multi_chan_species(
                 self.game, AQUARIUM_CELLS, self.game.size // 2, self.game.size // 2
             )
 
         if USE_EMITTER_PARAMS:
-            self.place_emitter(
+            self.place_multi_chan_species(
                 self.game, EMITTER_CELLS, self.game.size // 2, self.game.size // 2
             )
 
         if USE_PACMAN_PARAMS:
-            self.place_pacman(
+            self.place_multi_chan_species(
                 self.game, PACMAN_CELLS, self.game.size // 4, self.game.size // 4
             )
 
@@ -250,7 +250,7 @@ class Simulation:
 
         arr *= amplitude
 
-        h, w = arr.shape # Height and width of the patch
+        h, w = arr.shape  # Height and width of the patch
         if center is None:
             cy, cx = self.size // 2, self.size // 2
         else:
@@ -325,21 +325,7 @@ class Simulation:
         )
         plt.show()
 
-    ### 3 fois la même fonction TODO: à factoriser plus tard ###
-    def place_aquarium(self, board: Board, cells: np.ndarray, x: int, y: int):
+    def place_multi_chan_species(self, board: Board, cells: np.ndarray, x: int, y: int):
         h, w = cells.shape[1], cells.shape[2]
-
-        for c in range(cells.shape[0]):
-            board.board[x : x + h, y : y + w, c] = cells[c]
-
-    def place_emitter(self, board: Board, cells: np.ndarray, x: int, y: int):
-        h, w = cells.shape[1], cells.shape[2]
-
-        for c in range(cells.shape[0]):
-            board.board[x : x + h, y : y + w, c] = cells[c]
-
-    def place_pacman(self, board: Board, cells: np.ndarray, x: int, y: int):
-        h, w = cells.shape[1], cells.shape[2]
-
         for c in range(cells.shape[0]):
             board.board[x : x + h, y : y + w, c] = cells[c]
