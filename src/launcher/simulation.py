@@ -208,13 +208,13 @@ class Simulation:
         normalize: bool = True,
     ) -> None:
         """
-        Applique un patch 2D sur la grille self.X.
+        Apply a 2D patch to the grid self.X.
 
-        patch     : np.ndarray, valeurs approximativement 0..1
-        center    : (y,x) coordonnée du centre où placer le patch, par défaut centre de la grille
-        rotate    : nombre de rotations de 90° (0..3)
-        amplitude : facteur multiplicatif appliqué au patch
-        normalize : si True, normalise le patch à 1 avant amplitude
+        patch     : The 2D numpy array to apply as a patch
+        center    : (y,x) coordinates of the center where to place the patch
+        rotate    : number of 90° rotations (0..3)
+        amplitude : multiplicative factor applied to the patch
+        normalize : if True, normalize the patch to 1 before applying amplitude
         """
         if patch is None:
             return
@@ -228,7 +228,7 @@ class Simulation:
             if mx > 0:
                 arr /= mx
 
-        #  recentrage
+        #  recenter
         yy, xx = np.indices(arr.shape)
         mass = arr.sum()
 
@@ -248,11 +248,9 @@ class Simulation:
             arr, shift=(dy, dx), order=1, mode="constant", cval=0.0, prefilter=False
         )
 
-        # appliquer amplitude
         arr *= amplitude
 
-        # calcul du coin supérieur gauche
-        h, w = arr.shape
+        h, w = arr.shape # Height and width of the patch
         if center is None:
             cy, cx = self.size // 2, self.size // 2
         else:
@@ -261,7 +259,7 @@ class Simulation:
         top = int(round(cy - h / 2))
         left = int(round(cx - w / 2))
 
-        # injection du patch dans la grille avec wrap
+        # Apply the patch to self.X with wrapping
         for dy in range(h):
             for dx in range(w):
                 y = (top + dy) % self.size
@@ -272,7 +270,7 @@ class Simulation:
                 else:
                     self.X[y, x] = np.clip(self.X[y, x] + arr[dy, dx], 0, 1)
 
-        # synchroniser la grille brute multi-canaux
+        # synchronize the raw multi-channel grid
         if hasattr(self, "X_raw") and self.X_raw.ndim == 3:
             if isinstance(self.X, list):
                 self.X_raw = np.clip(np.stack(self.X, axis=2), 0, 1)
@@ -282,25 +280,8 @@ class Simulation:
                 )
 
     def __update(self, frame: int) -> list:
-        # évolution (gère mode multi-canaux si `self.X` est une liste)
-        if isinstance(self.X, list):
-            self.X = self.filtre.evolve_lenia(self.X)
-            # `evolve_lenia` doit retourner une liste de plans
-            stack = np.clip(np.stack(self.X, axis=2), 0, 1)
-            # mettre à jour la grille brute
-            if hasattr(self, "X_raw") and self.X_raw.ndim == 3:
-                self.X_raw = stack.copy()
-            # préparer affichage RGB si possible
-            if stack.shape[2] >= 3:
-                display = stack[:, :, :3]
-            elif stack.shape[2] == 2:
-                zeros = np.zeros_like(stack[:, :, 0])
-                display = np.dstack((stack[:, :, 0], stack[:, :, 1], zeros))
-            else:
-                display = stack[:, :, 0]
-        else:
-            self.X = self.filtre.evolve_lenia(self.X)
-            display = self.X
+        self.X = self.filtre.evolve_lenia(self.X)
+        display = self.X
         self.img.set_data(display)
         return [self.img]
 
