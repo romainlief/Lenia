@@ -7,6 +7,15 @@ BOARD_SIZE: int = 100
 VOID_BOARD: bool = True
 CHANNEL_COUNT: int = 1
 
+# --- CHOOSE ---
+USE_ORBIUM_PARAMS: bool = False
+USE_HYDROGEMINIUM_PARAMS: bool = False
+USE_FISH_PARAMS: bool = False
+USE_AQUARIUM_PARAMS: bool = False
+USE_WANDERER_PARAMS: bool = False
+USE_EMITTER_PARAMS: bool = True
+USE_PACMAN_PARAMS: bool = False
+
 # ----------- PARAMETRES ORBIUM -----------
 ORBIUM_M: float = pattern["orbium"].get("m", 0)  # mu de la croissance pour cet orbium
 ORBIUM_S: float = pattern["orbium"].get(
@@ -95,17 +104,7 @@ GENERIC_S: float = 0.1  # sigma générique
 GENERIC_T: int = 10
 GENERIC_R: int = 20
 
-# --- CHOIX ACTIF ---
-USE_ORBIUM_PARAMS: bool = False
-USE_HYDROGEMINIUM_PARAMS: bool = False
-USE_FISH_PARAMS: bool = False
-USE_AQUARIUM_PARAMS: bool = False
-USE_WANDERER_PARAMS: bool = False
-USE_EMITTER_PARAMS: bool = False
-USE_PACMAN_PARAMS: bool = True
-
-# -----------CROISSANCE----------------
-# Sélectionner paramètres selon le mode actif
+# -----------PARAMETERS----------------
 if USE_ORBIUM_PARAMS:
     SIGMA: float = ORBIUM_S
     MU: float = ORBIUM_M
@@ -163,7 +162,7 @@ else:
     KERNEL_TYPE = Species_types.GENERIC
     CHANNEL_COUNT = 1
 
-
+# -----------TIME STEP-----------------
 DT: float = 1.0 / ACTIVE_T
 
 # -----------FILTRE--------------------

@@ -20,9 +20,13 @@ class Fonction_de_croissance:
         """Gaussienne normalisée pour la croissance et le kernel."""
         return np.exp(-((x - mu) ** 2) / (2 * sigma**2))
     
-    def target(self, x: np.ndarray, m: float, s: float) -> np.ndarray:
+    def target(self, x: np.ndarray, m: float, s: float, A=None) -> np.ndarray:
         """Target function for Wanderer."""
-        return np.exp(-(((x - m) / s) ** 2) / 2)
+        if A is None:
+            return np.exp(-(((x - m) / s) ** 2) / 2)
+        else:
+            print("ici")
+            return np.exp(-(((x - m) / s) ** 2) / 2) - A
 
     def gauss_kernel(self, x: np.ndarray, mu: float, sigma: float) -> np.ndarray:
         """Gaussienne du kernel (version 'bell' — sans normalisation par écart-type²)."""
@@ -30,8 +34,8 @@ class Fonction_de_croissance:
         # Cela donne une cloche plus "serrée" que gauss pour même sigma
         return np.exp(-(((x - mu) / sigma) ** 2) / 2)
     
-    def bell_growth(self, U, m, s): # For fish
+    def bell_growth(self, U, m, s, A=None):
         return np.exp(-(((U - m) / s) ** 2) / 2) * 2 - 1
-
-    def other_function(self, x: np.ndarray) -> np.ndarray:
-        return 0 + ((x >= 0.12) & (x <= 0.15)) - ((x < 0.12) | (x > 0.15))
+    
+    def soft_clip(self, x, vmin, vmax):
+        return 1 / (1 + np.exp(-4 * (x - 0.5)))

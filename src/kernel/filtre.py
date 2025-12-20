@@ -56,7 +56,7 @@ class Filtre:
             assert len(mus) == len(sigmas)
 
         # Préparation des kernels FFT dès l'init pour Fish
-        self.prepared_kernels_fft : list[np.ndarray] | None = None
+        self.prepared_kernels_fft: list[np.ndarray] | None = None
         if self.kernels is not None:
             self.prepared_kernels_fft = self.prepare_fish_kernels_fft()
 
@@ -76,7 +76,7 @@ class Filtre:
             # distance scaled by kernel radius and number of rings
             D = np.sqrt(x**2 + y**2) / r_k * len(k["b"])
             amplitudes = np.asarray(k["b"])[np.minimum(D.astype(int), len(k["b"]) - 1)]
-            K_local = amplitudes * self.bell(D % 1, 0.5, 0.15)
+            K_local = amplitudes * self.fonction_de_croissance.target(D % 1, 0.5, 0.15)
             K_local[D >= len(k["b"])] = 0
             K_local /= K_local.sum() if K_local.sum() > 0 else 1
             kernels_fft.append(np.fft.fft2(np.fft.fftshift(K_local)))
@@ -97,7 +97,7 @@ class Filtre:
             D = self.distance / self.R * len(b_arr)
             ring_indices = np.minimum(D.astype(int), len(b_arr) - 1)
             amplitudes = b_arr[ring_indices]
-            K_local = amplitudes * self.bell(D % 1, 0.5, 0.15)
+            K_local = amplitudes * self.fonction_de_croissance.target(D % 1, 0.5, 0.15)
             K_local[D >= len(b_arr)] = 0
         elif self.mus is not None and self.sigmas is not None:
             for mu, sigma in zip(self.mus, self.sigmas):
@@ -119,10 +119,6 @@ class Filtre:
 
         return np.fft.fft2(K)
 
-    def bell_growth(self, U, m, s, A=None):
-        """Croissance pour Fish"""
-        return self.bell(U, m, s) * 2 - 1
-
     def evolve_lenia(self, X: np.ndarray):
         if (  # Mode Fish
             self.kernels is not None
@@ -131,7 +127,10 @@ class Filtre:
         ):
             Ks = self.prepared_kernels_fft
             Us = [np.real(np.fft.ifft2(fK * np.fft.fft2(X))) for fK in Ks]
-            Gs = [self.bell_growth(U, k["m"], k["s"]) for U, k in zip(Us, self.kernels)]
+            Gs = [
+                self.fonction_de_croissance.bell_growth(U, k["m"], k["s"])
+                for U, k in zip(Us, self.kernels)
+            ]
             X = np.clip(X + DT * np.mean(np.asarray(Gs), axis=0), 0, 1)
 
         elif (  # Multi-channel mode (Aquarium / Emitter / Pacman)
@@ -167,20 +166,19 @@ class Filtre:
             else:
                 raise ValueError("Species type non supporté pour multi-channel.")
 
-            def growth(U, m, s, A=None):
-                return self.bell(U, m, s) * 2 - 1
-
+            # TODO: Mettre ca dans croissance.py
             def target(U, m, s, A):
-                return self.bell(U, m, s) - A
-
-            def soft_clip(x, vmin, vmax):
-                return 1 / (1 + np.exp(-4 * (x - 0.5)))
+                return self.fonction_de_croissance.target(U, m, s) - A
 
             n_channels = len(X)
             if n_channels == 3 and self.species_type == Species_types.EMITTER:
-                funcs = [growth, growth, target]
+                funcs = [
+                    self.fonction_de_croissance.bell_growth,
+                    self.fonction_de_croissance.bell_growth,
+                    target,
+                ]
             else:
-                funcs = [growth] * n_channels
+                funcs = [self.fonction_de_croissance.bell_growth] * n_channels
 
             # for each kernel, compute its convolution on the source channel
             for i, (fK, k) in enumerate(zip(self.prepared_kernels_fft, self.kernels)):
@@ -199,14 +197,26 @@ class Filtre:
                     Gi = func(U, m, s, None)
                 Gs[dst] += h * Gi
             if self.species_type == Species_types.PACMAN:
-                return [soft_clip(Xi + DT * Gi, 0, 1) for Xi, Gi in zip(X, Gs)]
+                return [
+                    self.fonction_de_croissance.soft_clip(Xi + DT * Gi, 0, 1)
+                    for Xi, Gi in zip(X, Gs)
+                ]
             else:
                 return [np.clip(Xi + DT * Gi, 0, 1) for Xi, Gi in zip(X, Gs)]
         else:  # Lenia classique
             K = self.filtrer()
             U = np.real(np.fft.ifft2(np.fft.fft2(X) * K))
             if self.species_type == Species_types.WANDERER:
-                X = np.clip(X + DT * (self.fonction_de_croissance.target(U, WANDERER_M, WANDERER_S) - X), 0, 1)
+                X = np.clip(
+                    X
+                    + DT
+                    * (
+                        self.fonction_de_croissance.target(U, WANDERER_M, WANDERER_S)
+                        - X
+                    ),
+                    0,
+                    1,
+                )
             else:
                 X = X + DT * self.fonction_de_croissance.gaussienne(U, SIGMA, MU)
                 X = np.clip(X, 0, 1)

@@ -43,29 +43,29 @@ class Simulation:
         self, size: int = BOARD_SIZE, kernel_type: Species_types = KERNEL_TYPE
     ) -> None:
         """
-        Initialiser la simulation.
-        kernel_type: "orbium", "hydrogeminium", ou "generic"
+        Initialize the simulation.
+        size        : Size of the board (size x size)
+        kernel_type : Type of species kernel to use
         """
         self.size = size
-        self.game = Board()
-        self.multi_channel: bool = self.game.channels > 1
+        self.grid = Board()
+        self.multi_channel: bool = self.grid.channels > 1
 
         if USE_AQUARIUM_PARAMS:
             self.place_multi_chan_species(
-                self.game, AQUARIUM_CELLS, self.game.size // 2, self.game.size // 2
+                self.grid, AQUARIUM_CELLS, self.grid.size // 2, self.grid.size // 2
             )
 
         if USE_EMITTER_PARAMS:
             self.place_multi_chan_species(
-                self.game, EMITTER_CELLS, self.game.size // 2, self.game.size // 2
+                self.grid, EMITTER_CELLS, self.grid.size // 2, self.grid.size // 2
             )
 
         if USE_PACMAN_PARAMS:
             self.place_multi_chan_species(
-                self.game, PACMAN_CELLS, self.game.size // 4, self.game.size // 4
+                self.grid, PACMAN_CELLS, self.grid.size // 4, self.grid.size // 4
             )
 
-        # Choisir le kernel selon le type
         if kernel_type == Species_types.HYDROGEMINIUM:
             b = HYDROGEMINIUM_B
             self.filtre = Filtre(
@@ -73,7 +73,7 @@ class Simulation:
                     type=Type_de_croissance.GAUSSIENNE,
                 ),
                 size=FILTRE_SIZE,
-                b=b,  # Utiliser le kernel multi-anneau
+                b=b,
                 species_type=Species_types.HYDROGEMINIUM,
             )
         elif kernel_type == Species_types.ORBIUM:
@@ -96,7 +96,7 @@ class Simulation:
                 kernels=FISH_KERNEL,
                 species_type=Species_types.FISH,
             )
-            self.filtre.kernels = FISH_KERNEL  # Utiliser le kernel défini pour fish
+            self.filtre.kernels = FISH_KERNEL
         elif kernel_type == Species_types.AQUARIUM:
             self.filtre = Filtre(
                 fonction_de_croissance=Fonction_de_croissance(
@@ -108,9 +108,7 @@ class Simulation:
                 multi_channel=self.multi_channel,
                 species_type=Species_types.AQUARIUM,
             )
-            self.filtre.kernels = (
-                AQUARIUM_KERNEL  # Utiliser le kernel défini pour aquarium
-            )
+            self.filtre.kernels = AQUARIUM_KERNEL
         elif kernel_type == Species_types.WANDERER:
             b = WANDERER_B
             self.filtre = Filtre(
@@ -132,9 +130,7 @@ class Simulation:
                 multi_channel=self.multi_channel,
                 species_type=Species_types.EMITTER,
             )
-            self.filtre.kernels = (
-                EMITTER_KERNEL  # Utiliser le kernel défini pour emitter
-            )
+            self.filtre.kernels = EMITTER_KERNEL 
         elif kernel_type == Species_types.PACMAN:
             self.filtre = Filtre(
                 fonction_de_croissance=Fonction_de_croissance(
@@ -158,8 +154,7 @@ class Simulation:
                 species_type=Species_types.GENERIC,
             )
 
-        # board initial (copie pour pouvoir modifier sans toucher à l'objet GameOfLifeBase)
-        self.X_raw = self.game.board.copy()
+        self.X_raw = self.grid.board.copy()
         # Représentation utilisée pour l'évolution : soit 2D, soit liste de plans (multi-canaux)
         if self.X_raw.ndim == 3 and self.multi_channel:
             self.X = [self.X_raw[:, :, c].copy() for c in range(self.X_raw.shape[2])]
