@@ -72,7 +72,9 @@ class Filtre:
             # distance scaled by kernel radius and number of rings
             D = np.sqrt(x**2 + y**2) / r_k * len(k["b"])
             amplitudes = np.asarray(k["b"])[np.minimum(D.astype(int), len(k["b"]) - 1)]
-            K_local = amplitudes * self.fonction_de_croissance.target(D % 1, 0.5, 0.15)
+            K_local = amplitudes * self.fonction_de_croissance.target(
+                D % 1, 0.5, 0.15, None
+            )
             K_local[D >= len(k["b"])] = 0
             K_local /= K_local.sum() if K_local.sum() > 0 else 1
             kernels_fft.append(np.fft.fft2(np.fft.fftshift(K_local)))
@@ -93,7 +95,9 @@ class Filtre:
             D = self.distance / self.R * len(b_arr)
             ring_indices = np.minimum(D.astype(int), len(b_arr) - 1)
             amplitudes = b_arr[ring_indices]
-            K_local = amplitudes * self.fonction_de_croissance.target(D % 1, 0.5, 0.15)
+            K_local = amplitudes * self.fonction_de_croissance.target(
+                D % 1, 0.5, 0.15, None
+            )
             K_local[D >= len(b_arr)] = 0
         elif self.mus is not None and self.sigmas is not None:
             for mu, sigma in zip(self.mus, self.sigmas):
@@ -162,16 +166,12 @@ class Filtre:
             else:
                 raise ValueError("Species type non supporté pour multi-channel.")
 
-            # TODO: Mettre ca dans croissance.py
-            def target(U, m, s, A):
-                return self.fonction_de_croissance.target(U, m, s) - A
-
             n_channels = len(X)
             if n_channels == 3 and self.species_type == Species_types.EMITTER:
                 funcs = [
                     self.fonction_de_croissance.bell_growth,
                     self.fonction_de_croissance.bell_growth,
-                    target,
+                    self.fonction_de_croissance.target,
                 ]
             else:
                 funcs = [self.fonction_de_croissance.bell_growth] * n_channels
@@ -186,7 +186,7 @@ class Filtre:
                 U = np.real(np.fft.ifft2(fK * fXs[src]))
                 # select function by destination channel
                 func = funcs[dst] if dst < len(funcs) else funcs[0]
-                if func is target:
+                if func is funcs[2]:  # target function needs A parameter
                     A_dst = X[dst]
                     Gi = func(U, m, s, A_dst)
                 else:
@@ -207,7 +207,9 @@ class Filtre:
                     X
                     + DT
                     * (
-                        self.fonction_de_croissance.target(U, WANDERER_M, WANDERER_S)
+                        self.fonction_de_croissance.target(
+                            U, WANDERER_M, WANDERER_S, None
+                        )
                         - X
                     ),
                     0,

@@ -8,12 +8,12 @@ VOID_BOARD: bool = True
 CHANNEL_COUNT: int = 1
 
 # --- CHOOSE ---
-USE_ORBIUM_PARAMS: bool = True
+USE_ORBIUM_PARAMS: bool = False
 USE_HYDROGEMINIUM_PARAMS: bool = False
 USE_FISH_PARAMS: bool = False
 USE_AQUARIUM_PARAMS: bool = False
 USE_WANDERER_PARAMS: bool = False
-USE_EMITTER_PARAMS: bool = False
+USE_EMITTER_PARAMS: bool = True
 USE_PACMAN_PARAMS: bool = False
 
 # ----------- PARAMETRES ORBIUM -----------

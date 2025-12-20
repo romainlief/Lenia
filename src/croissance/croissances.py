@@ -20,12 +20,11 @@ class Fonction_de_croissance:
         """Gaussienne normalisée pour la croissance et le kernel."""
         return np.exp(-((x - mu) ** 2) / (2 * sigma**2))
     
-    def target(self, x: np.ndarray, m: float, s: float, A=None) -> np.ndarray:
+    def target(self, x: np.ndarray, m: float, s: float, A) -> np.ndarray:
         """Target function for Wanderer."""
         if A is None:
             return np.exp(-(((x - m) / s) ** 2) / 2)
         else:
-            print("ici")
             return np.exp(-(((x - m) / s) ** 2) / 2) - A
 
     def gauss_kernel(self, x: np.ndarray, mu: float, sigma: float) -> np.ndarray:
