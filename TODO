@@ -2,17 +2,13 @@
 
 ## TODO DU MOMENT
 
-- Refactoring
 - Faire les docstrings
 
 ## TODO GENERAL
 
-- Faire le readme
 - Autres fonctions de croissance(step, linear, ...)
-- Faire les requirements.txt
 - Faire une GUI pour lancer en boucle/changer de pattern/filtre etc...
 - Faire une fenetre plus grande/voir meme ou on peu changer la taille
 - Refactoring
 - Faire du machine learning avec les cellules
-- Faire les docstrings
 - Améliorer le readme

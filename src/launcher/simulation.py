@@ -210,6 +210,8 @@ class Simulation:
         rotate    : number of 90° rotations (0..3)
         amplitude : multiplicative factor applied to the patch
         normalize : if True, normalize the patch to 1 before applying amplitude
+        
+        Returns:    None
         """
         if patch is None:
             return
@@ -275,18 +277,37 @@ class Simulation:
                 )
 
     def __update(self, frame: int) -> list:
+        """
+        Update the simulation for 1 channel board
+
+        Args:
+            frame (int): The current frame number.
+
+        Returns:
+            list: A list containing the updated image.
+        """
         self.X = self.filtre.evolve_lenia(self.X)
         display = self.X
         self.img.set_data(display)
         return [self.img]
 
     def run(self, num_steps=100, interpolation="bicubic"):
+        """
+        The method that choose the run the simulation in function of if its multi_channel or not.
+
+        Args:
+            num_steps (int, optional): The number of steps to run the simulation. Defaults to 100.
+            interpolation (str, optional): The interpolation method for displaying the image. Defaults to "bicubic".
+        """
         if self.multi_channel:
             self.__run_multi(num_steps=num_steps, interpolation=interpolation)
         else:
             self.__run()
 
     def __run(self):
+        """
+        Run the simulation for single-channel boards.
+        """
         fig, ax = plt.subplots()
         self.img = ax.imshow(self.X, cmap="inferno", interpolation="none")
         ax.set_title("Lenia")
@@ -298,6 +319,19 @@ class Simulation:
         plt.show()
 
     def __run_multi(self, num_steps=100, interpolation="bicubic"):
+        """
+        Run the simulation for multi-channel boards.
+        
+        Args:
+            num_steps (int, optional): The number of steps to run the simulation. Defaults to 100.
+            interpolation (str, optional): The interpolation method for displaying the image. Defaults to "bicubic".
+
+        Raises:
+            RuntimeError: If self.X is not a list (i.e., not multi-channel).
+
+        Returns:
+            None
+        """
         if not isinstance(self.X, list):
             raise RuntimeError(
                 "run_multi requires multi-channel board (self.X as list)"
@@ -308,6 +342,12 @@ class Simulation:
         ax.set_title("Lenia Multi-Channel")
 
         def __update_multi(i):
+            """
+            The update function for multi channel species
+
+            Returns:
+                _type_: _tuple of im
+            """
             nonlocal im
             self.X = self.filtre.evolve_lenia(self.X)
             im.set_array(np.dstack([self.X[1], self.X[2], self.X[0]]))
@@ -321,6 +361,15 @@ class Simulation:
         plt.show()
 
     def place_multi_chan_species(self, board: Board, cells: np.ndarray, x: int, y: int):
+        """
+        Place multi-channel species on the board.
+        
+        Args:
+            board (Board): The board on which to place the species.
+            cells (np.ndarray): The multi-channel species cells to place.
+            x (int): The x-coordinate on the board.
+            y (int): The y-coordinate on the board.
+        """
         h, w = cells.shape[1], cells.shape[2]
         for c in range(cells.shape[0]):
             board.board[x : x + h, y : y + w, c] = cells[c]
