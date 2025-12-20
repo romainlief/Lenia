@@ -19,7 +19,16 @@ from const.constantes import (
     USE_PACMAN_PARAMS,
     PACMAN_CELLS,
     PACMAN_KERNEL,
+    KERNEL_TYPE,
+    USE_HYDROGEMINIUM_PARAMS,
+    USE_ORBIUM_PARAMS,
+    USE_FISH_PARAMS,
+    USE_WANDERER_PARAMS,
 )
+from species.orbium import Orbium
+from species.hydrogeminium import Hydrogeminium
+from species.fish import Fish
+from species.wanderer import Wanderer
 from croissance.type_croissance import Type_de_croissance
 
 import numpy as np
@@ -31,7 +40,7 @@ from species.species_types import Species_types
 
 class Simulation:
     def __init__(
-        self, size: int = BOARD_SIZE, kernel_type: Species_types = Species_types.GENERIC
+        self, size: int = BOARD_SIZE, kernel_type: Species_types = KERNEL_TYPE
     ) -> None:
         """
         Initialiser la simulation.
@@ -158,6 +167,37 @@ class Simulation:
             self.X = np.mean(self.X_raw, axis=2)
         else:
             self.X = self.X_raw.copy()
+
+        if USE_ORBIUM_PARAMS:
+            orbium = Orbium()
+            patch = orbium.make_patch(
+                rotate=0,
+                amplitude=4.0,
+                normalize=True,
+            )
+        elif USE_HYDROGEMINIUM_PARAMS:
+            hydrogenium = Hydrogeminium()
+            patch = hydrogenium.make_patch(
+                rotate=0,
+                amplitude=4.0,
+                normalize=True,
+            )
+        elif USE_FISH_PARAMS:
+            fish = Fish()
+            patch = fish.make_patch(
+                rotate=0,
+                amplitude=4.0,
+                normalize=True,
+            )
+        elif USE_WANDERER_PARAMS:
+            wanderer = Wanderer()
+            patch = wanderer.make_patch(
+                rotate=0,
+                amplitude=4.0,
+                normalize=True,
+            )
+        if not USE_AQUARIUM_PARAMS and not USE_EMITTER_PARAMS and not USE_PACMAN_PARAMS:
+            self.apply_patch(patch, center=(BOARD_SIZE // 2, BOARD_SIZE // 2))
 
     def apply_patch(
         self,
@@ -294,9 +334,9 @@ class Simulation:
         def __update_multi(i):
             nonlocal im
             self.X = self.filtre.evolve_lenia(self.X)
-            im.set_array(np.dstack([ self.X[1], self.X[2], self.X[0] ]))
+            im.set_array(np.dstack([self.X[1], self.X[2], self.X[0]]))
             # a choisir entre les deux styles d'affichage:
-            #im.set_array(np.dstack(self.X))
+            # im.set_array(np.dstack(self.X))
             return (im,)
 
         ani = animation.FuncAnimation(

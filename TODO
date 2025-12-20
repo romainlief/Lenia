@@ -2,9 +2,7 @@
 
 ## TODO DU MOMENT
 
-- Faire les requirements.txt
 - Refactoring
-- Faire le readme
 - Faire les docstrings
 
 ## TODO GENERAL
@@ -17,3 +15,4 @@
 - Refactoring
 - Faire du machine learning avec les cellules
 - Faire les docstrings
+- Améliorer le readme

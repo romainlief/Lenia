@@ -99,10 +99,10 @@ GENERIC_R: int = 20
 USE_ORBIUM_PARAMS: bool = False
 USE_HYDROGEMINIUM_PARAMS: bool = False
 USE_FISH_PARAMS: bool = False
-USE_AQUARIUM_PARAMS: bool = False
+USE_AQUARIUM_PARAMS: bool = True
 USE_WANDERER_PARAMS: bool = False
 USE_EMITTER_PARAMS: bool = False
-USE_PACMAN_PARAMS: bool = True
+USE_PACMAN_PARAMS: bool = False
 
 # -----------CROISSANCE----------------
 # Sélectionner paramètres selon le mode actif
