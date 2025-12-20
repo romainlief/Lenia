@@ -291,6 +291,24 @@ class Simulation:
         self.img.set_data(display)
         return [self.img]
 
+    def _enable_resize(self, fig: plt.Figure) -> None:
+        """
+        Attach a resize handler so the figure redraws and layout updates when
+        the window is resized (useful for GUI backends).
+        
+        Args:
+            fig (plt.Figure): The matplotlib figure to attach the resize handler to.
+        """
+        def _on_resize(event):
+            try:
+                fig.tight_layout()
+            except Exception:
+                # tight_layout can fail in some edge cases; ignore silently
+                pass
+            fig.canvas.draw_idle()
+
+        fig.canvas.mpl_connect("resize_event", _on_resize)
+
     def run(self, num_steps=100, interpolation="bicubic"):
         """
         The method that choose the run the simulation in function of if its multi_channel or not.
@@ -316,6 +334,7 @@ class Simulation:
         anim = animation.FuncAnimation(
             fig, self.__update, frames=200, interval=20, blit=True
         )
+        self._enable_resize(fig)
         plt.show()
 
     def __run_multi(self, num_steps=100, interpolation="bicubic"):
@@ -358,6 +377,7 @@ class Simulation:
         ani = animation.FuncAnimation(
             fig, __update_multi, frames=num_steps, interval=50, blit=False
         )
+        self._enable_resize(fig)
         plt.show()
 
     def place_multi_chan_species(self, board: Board, cells: np.ndarray, x: int, y: int):
