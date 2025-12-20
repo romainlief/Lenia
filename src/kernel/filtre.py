@@ -22,14 +22,14 @@ from const.constantes import (
     PACMAN_ms,
     PACMAN_ss,
 )
-from croissance.croissances import Fonction_de_croissance
+from croissance.croissances import Statistical_growth_function
 from species.species_types import Species_types
 
 
 class Filtre:
     def __init__(
         self,
-        fonction_de_croissance: Fonction_de_croissance,
+        fonction_de_croissance: Statistical_growth_function,
         size: int,
         mus: list | None = None,
         sigmas: list | None = None,

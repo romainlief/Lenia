@@ -1,5 +1,5 @@
 from board.board import Board
-from croissance.croissances import Fonction_de_croissance
+from croissance.croissances import Statistical_growth_function
 from kernel.filtre import Filtre
 from const.constantes import (
     FILTRE_SIZE,
@@ -29,7 +29,7 @@ from species.orbium import Orbium
 from species.hydrogeminium import Hydrogeminium
 from species.fish import Fish
 from species.wanderer import Wanderer
-from croissance.type_croissance import Type_de_croissance
+from croissance.type_croissance import Growth_type
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -69,8 +69,8 @@ class Simulation:
         if kernel_type == Species_types.HYDROGEMINIUM:
             b = HYDROGEMINIUM_B
             self.filtre = Filtre(
-                fonction_de_croissance=Fonction_de_croissance(
-                    type=Type_de_croissance.GAUSSIENNE,
+                fonction_de_croissance=Statistical_growth_function(
+                    type=Growth_type.GAUSSIENNE,
                 ),
                 size=FILTRE_SIZE,
                 b=b,
@@ -79,8 +79,8 @@ class Simulation:
         elif kernel_type == Species_types.ORBIUM:
             b = ORBIUM_B
             self.filtre = Filtre(
-                fonction_de_croissance=Fonction_de_croissance(
-                    type=Type_de_croissance.GAUSSIENNE
+                fonction_de_croissance=Statistical_growth_function(
+                    type=Growth_type.GAUSSIENNE
                 ),
                 size=FILTRE_SIZE,
                 b=b,
@@ -88,8 +88,8 @@ class Simulation:
             )
         elif kernel_type == Species_types.FISH:
             self.filtre = Filtre(
-                fonction_de_croissance=Fonction_de_croissance(
-                    type=Type_de_croissance.GAUSSIENNE
+                fonction_de_croissance=Statistical_growth_function(
+                    type=Growth_type.GAUSSIENNE
                 ),
                 size=FILTRE_SIZE,
                 b=None,
@@ -99,8 +99,8 @@ class Simulation:
             self.filtre.kernels = FISH_KERNEL
         elif kernel_type == Species_types.AQUARIUM:
             self.filtre = Filtre(
-                fonction_de_croissance=Fonction_de_croissance(
-                    type=Type_de_croissance.GAUSSIENNE
+                fonction_de_croissance=Statistical_growth_function(
+                    type=Growth_type.GAUSSIENNE
                 ),
                 size=FILTRE_SIZE,
                 b=None,
@@ -112,8 +112,8 @@ class Simulation:
         elif kernel_type == Species_types.WANDERER:
             b = WANDERER_B
             self.filtre = Filtre(
-                fonction_de_croissance=Fonction_de_croissance(
-                    type=Type_de_croissance.GAUSSIENNE
+                fonction_de_croissance=Statistical_growth_function(
+                    type=Growth_type.GAUSSIENNE
                 ),
                 size=FILTRE_SIZE,
                 b=b,
@@ -121,8 +121,8 @@ class Simulation:
             )
         elif kernel_type == Species_types.EMITTER:
             self.filtre = Filtre(
-                fonction_de_croissance=Fonction_de_croissance(
-                    type=Type_de_croissance.GAUSSIENNE
+                fonction_de_croissance=Statistical_growth_function(
+                    type=Growth_type.GAUSSIENNE
                 ),
                 size=FILTRE_SIZE,
                 b=None,
@@ -133,8 +133,8 @@ class Simulation:
             self.filtre.kernels = EMITTER_KERNEL 
         elif kernel_type == Species_types.PACMAN:
             self.filtre = Filtre(
-                fonction_de_croissance=Fonction_de_croissance(
-                    type=Type_de_croissance.GAUSSIENNE
+                fonction_de_croissance=Statistical_growth_function(
+                    type=Growth_type.GAUSSIENNE
                 ),
                 size=FILTRE_SIZE,
                 b=None,
@@ -145,8 +145,8 @@ class Simulation:
             self.filtre.kernels = PACMAN_KERNEL
         else:  # generic
             self.filtre = Filtre(
-                fonction_de_croissance=Fonction_de_croissance(
-                    type=Type_de_croissance.GAUSSIENNE
+                fonction_de_croissance=Statistical_growth_function(
+                    type=Growth_type.GAUSSIENNE
                 ),
                 size=FILTRE_SIZE,
                 mus=MUS,
