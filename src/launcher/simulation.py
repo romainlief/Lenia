@@ -300,14 +300,61 @@ class Simulation:
             fig (plt.Figure): The matplotlib figure to attach the resize handler to.
         """
         def _on_resize(event):
+            """
+            Handle the resize event for the figure.
+            """
             try:
                 fig.tight_layout()
             except Exception:
-                # tight_layout can fail in some edge cases; ignore silently
-                pass
+                pass # tight_layout can fail in some edge cases; ignore silently
             fig.canvas.draw_idle()
-
         fig.canvas.mpl_connect("resize_event", _on_resize)
+    
+    def zoom_in(self, fig: plt.Figure, factor: float = 1.1) -> None:
+        """
+        Zoom in the current view of the figure.
+
+        Args:
+            factor (float, optional): The zoom factor. Defaults to 1.2.
+            fig (plt.Figure): The matplotlib figure to zoom in.
+        """
+        def _on_zoom(event):
+            """
+            Handle the zoom event for the figure.
+            """
+            ax = fig.axes[0]
+            xlim = ax.get_xlim()
+            ylim = ax.get_ylim()
+            x_center = (xlim[0] + xlim[1]) / 2
+            y_center = (ylim[0] + ylim[1]) / 2
+            x_range = (xlim[1] - xlim[0]) / factor
+            y_range = (ylim[1] - ylim[0]) / factor
+            ax.set_xlim(x_center - x_range / 2, x_center + x_range / 2)
+            ax.set_ylim(y_center - y_range / 2, y_center + y_range / 2)
+            fig.canvas.draw_idle()
+        def _zoom_out(event):
+            """
+            Handle the zoom out event for the figure.
+            """
+            ax = fig.axes[0]
+            xlim = ax.get_xlim()
+            ylim = ax.get_ylim()
+            x_center = (xlim[0] + xlim[1]) / 2
+            y_center = (ylim[0] + ylim[1]) / 2
+            x_range = (xlim[1] - xlim[0]) * factor
+            y_range = (ylim[1] - ylim[0]) * factor
+            ax.set_xlim(x_center - x_range / 2, x_center + x_range / 2)
+            ax.set_ylim(y_center - y_range / 2, y_center + y_range / 2)
+            fig.canvas.draw_idle()
+        def _on_scroll(event):
+            """
+            Handle the scroll event for zooming in and out.
+            """
+            if event.button == "up":
+                _on_zoom(event)
+            elif event.button == "down":
+                _zoom_out(event)
+        fig.canvas.mpl_connect("scroll_event", _on_scroll)
 
     def run(self, num_steps=100, interpolation="bicubic"):
         """
@@ -335,6 +382,7 @@ class Simulation:
             fig, self.__update, frames=200, interval=20, blit=True
         )
         self._enable_resize(fig)
+        self.zoom_in(fig=fig)
         plt.show()
 
     def __run_multi(self, num_steps=100, interpolation="bicubic"):
@@ -378,6 +426,7 @@ class Simulation:
             fig, __update_multi, frames=num_steps, interval=50, blit=False
         )
         self._enable_resize(fig)
+        self.zoom_in(fig=fig)
         plt.show()
 
     def place_multi_chan_species(self, board: Board, cells: np.ndarray, x: int, y: int):
