@@ -60,10 +60,6 @@ class Filtre:
         if self.kernels is not None:
             self.prepared_kernels_fft = self.prepare_fish_kernels_fft()
 
-    def bell(self, x, m, s):
-        """Gaussian bell: exp(-((x-m)/s)^2 / 2)"""
-        return np.exp(-(((x - m) / s) ** 2) / 2)
-
     def prepare_fish_kernels_fft(self) -> list:
         """Prépare les kernels FFT pour Fish (multi-kernels)"""
         H, W = self.world_size
