@@ -435,7 +435,7 @@ class Simulation:
                 _type_: _tuple of im
             """
             nonlocal im
-            result = self.filtre.evolve_lenia(self.x)
+            result = self.filtre.evolve_lenia(self.x) # type: ignore
             if not isinstance(result, list):
                 self.x = [result] if result.ndim == 2 else list(result)
             else:

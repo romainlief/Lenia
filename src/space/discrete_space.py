@@ -12,14 +12,14 @@ class DiscreteSpace(Space):
 
     def __init__(self, n, mutation_mean=0.0, mutation_std=1.0, indpb=1.0) -> None:
         assert n >= 0, "n (number of discrete elements) must be non-negative"
-        self.n = n
-        self.mutation_mean = torch.as_tensor(
+        self.n: int = n
+        self.mutation_mean: torch.Tensor = torch.as_tensor(
             mutation_mean, dtype=torch.float64
         )  # mean of the gaussian mutation
-        self.mutation_std = torch.as_tensor(
+        self.mutation_std: torch.Tensor = torch.as_tensor(
             mutation_std, dtype=torch.float64
         )  # std of the gaussian mutation
-        self.indpb = torch.as_tensor(
+        self.indpb: torch.Tensor = torch.as_tensor(
             indpb, dtype=torch.float64
         )  # independent probability for each attribute to be mutated
         super(DiscreteSpace, self).__init__((), torch.int64)
@@ -34,14 +34,22 @@ class DiscreteSpace(Space):
         """
         Randomly mutate an element of this space.
         """
-        mutate_mask = torch.rand(self.shape) < self.indpb
-        noise = torch.normal(self.mutation_mean, self.mutation_std, ())
+        mutate_mask = torch.rand(x.shape if hasattr(x, "shape") else ()) < self.indpb
+        noise = torch.normal(
+            float(self.mutation_mean),
+            float(self.mutation_std),
+            x.shape if hasattr(x, "shape") else (),
+        )
         x = x.type(torch.float64) + mutate_mask * noise
         x = torch.floor(x).type(self.dtype)
-        if not self.contains(x):
+        if isinstance(x, (int, torch.Tensor)) and not self.contains(x):
             return self.clamp(x)
         else:
-            return x
+            return (
+                x
+                if isinstance(x, torch.Tensor)
+                else torch.as_tensor(x, dtype=self.dtype)
+            )
 
     def contains(self, x: int | torch.Tensor) -> bool:
         """
