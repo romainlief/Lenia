@@ -2,13 +2,11 @@
 
 ## TODO DU MOMENT
 
-- Faire les docstrings
+- Faire une GUI pour lancer en boucle/changer de pattern/filtre etc...
 
 ## TODO GENERAL
 
-- Autres fonctions de croissance(step, linear, ...)
-- Faire une GUI pour lancer en boucle/changer de pattern/filtre etc...
-- Faire une fenetre plus grande/voir meme ou on peu changer la taille
 - Refactoring
 - Faire du machine learning avec les cellules
 - Améliorer le readme
+- Ajouter des obstacles sur les maps

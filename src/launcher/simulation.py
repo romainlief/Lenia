@@ -1,4 +1,4 @@
-from board.board import Board
+from space.board import Board
 from croissance.croissances import Statistical_growth_function
 from kernel.filtre import Filtre
 from const.constantes import (
@@ -63,7 +63,7 @@ class Simulation:
 
         if USE_PACMAN_PARAMS:
             self.place_multi_chan_species(
-                self.grid, PACMAN_CELLS, self.grid.size // 4, self.grid.size // 4
+                self.grid, PACMAN_CELLS, self.grid.size // 2, self.grid.size // 2
             )
 
         if kernel_type == Species_types.HYDROGEMINIUM:
