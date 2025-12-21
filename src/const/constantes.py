@@ -5,7 +5,8 @@ import numpy as np
 # -----------BOARD---------------------
 BOARD_SIZE: int = 100
 VOID_BOARD: bool = True
-CHANNEL_COUNT: int = 1
+channel_count: int = 1
+SIMULATION_MODE: bool = True # True for simulation, False for Exploration
 
 # --- CHOOSE ---
 USE_ORBIUM_PARAMS: bool = False
@@ -24,7 +25,7 @@ ORBIUM_S: float = pattern["orbium"].get(
 ORBIUM_T: float = pattern["orbium"].get("T", 0)  # pas temporel inverse (DT = 1/T)
 ORBIUM_R: int = pattern["orbium"].get("R", 0)  # rayon du noyau pour cet orbium
 ORBIUM_CELLS = pattern["orbium"].get("cells", [])
-ORBIUM_B: list = pattern["orbium"].get("b", [])
+ORBIUM_B: list[float] = pattern["orbium"].get("b", [])
 
 # ----------- PARAMETRES HYDROGEMINIUM -----------
 HYDROGEMINIUM_M: float = pattern["geminium"].get(
@@ -40,7 +41,7 @@ HYDROGEMINIUM_R: int = pattern["geminium"].get(
     "R", 0
 )  # rayon du noyau (max(b) = 3 niveaux)
 HYDROGEMINIUM_CELLS = pattern["geminium"].get("cells", [])
-HYDROGEMINIUM_B: list = pattern["geminium"].get("b", [])
+HYDROGEMINIUM_B: list[float] = pattern["geminium"].get("b", [])
 
 # ----------- PARAMETRES FISH -----------
 FISH_R: int = pattern["fish"].get("R", 0)
@@ -68,7 +69,7 @@ WANDERER_S: float = pattern["wanderer"].get("s", 0)
 WANDERER_T: float = pattern["wanderer"].get("T", 0)
 WANDERER_R: int = pattern["wanderer"].get("R", 0)
 WANDERER_CELLS = pattern["wanderer"].get("cells", [])
-WANDERER_B: list = pattern["wanderer"].get("b", [])
+WANDERER_B: list[float] = pattern["wanderer"].get("b", [])
 
 # ----------- PARAMETRES EMITTER -----------
 EMITTER_R: int = pattern["emitter"].get("R", 0)
@@ -106,67 +107,67 @@ GENERIC_R: int = 20
 
 # -----------PARAMETERS----------------
 if USE_ORBIUM_PARAMS:
-    SIGMA: float = ORBIUM_S
-    MU: float = ORBIUM_M
-    ACTIVE_R: int = ORBIUM_R
-    ACTIVE_T: float = ORBIUM_T
-    KERNEL_TYPE = Species_types.ORBIUM
-    CHANNEL_COUNT = 1
+    sigma = ORBIUM_S
+    mu = ORBIUM_M
+    active_r = ORBIUM_R
+    active_t = ORBIUM_T
+    kernel_type = Species_types.ORBIUM
+    channel_count = 1
 elif USE_HYDROGEMINIUM_PARAMS:
-    SIGMA: float = HYDROGEMINIUM_S
-    MU: float = HYDROGEMINIUM_M
-    ACTIVE_R: int = HYDROGEMINIUM_R
-    ACTIVE_T: float = HYDROGEMINIUM_T
-    KERNEL_TYPE = Species_types.HYDROGEMINIUM
-    CHANNEL_COUNT = 1
+    sigma = HYDROGEMINIUM_S
+    mu = HYDROGEMINIUM_M
+    active_r = HYDROGEMINIUM_R
+    active_t = HYDROGEMINIUM_T
+    kernel_type = Species_types.HYDROGEMINIUM
+    channel_count = 1
 elif USE_FISH_PARAMS:
-    SIGMA: float | None = None
-    MU: float | None = None
-    ACTIVE_R: int = FISH_R
-    ACTIVE_T: float = FISH_T
-    KERNEL_TYPE = Species_types.FISH
-    CHANNEL_COUNT = 1
+    sigma = None  # type: float | None
+    mu = None
+    active_r = FISH_R
+    active_t = FISH_T
+    kernel_type = Species_types.FISH
+    channel_count = 1
 elif USE_AQUARIUM_PARAMS:
-    SIGMA: float | None = None
-    MU: float | None = None
-    ACTIVE_R: int = AQUARIUM_R
-    ACTIVE_T: float = AQUARIUM_T
-    KERNEL_TYPE = Species_types.AQUARIUM
-    CHANNEL_COUNT = 3
+    sigma = None  
+    mu = None  
+    active_r = AQUARIUM_R
+    active_t = AQUARIUM_T
+    kernel_type = Species_types.AQUARIUM
+    channel_count = 3
 elif USE_EMITTER_PARAMS:
-    SIGMA: float | None = None
-    MU: float | None = None
-    ACTIVE_R: int = EMITTER_R
-    ACTIVE_T: float = EMITTER_T
-    KERNEL_TYPE = Species_types.EMITTER
-    CHANNEL_COUNT = 3
+    sigma = None 
+    mu = None  
+    active_r = EMITTER_R
+    active_t = EMITTER_T
+    kernel_type = Species_types.EMITTER
+    channel_count = 3
 elif USE_WANDERER_PARAMS:
-    SIGMA: float = WANDERER_S
-    MU: float = WANDERER_M
-    ACTIVE_R: int = WANDERER_R
-    ACTIVE_T: float = WANDERER_T
-    KERNEL_TYPE = Species_types.WANDERER
-    CHANNEL_COUNT = 1
+    sigma = WANDERER_S
+    mu = WANDERER_M
+    active_r = WANDERER_R
+    active_t = WANDERER_T
+    kernel_type = Species_types.WANDERER
+    channel_count = 1
 elif USE_PACMAN_PARAMS:
-    SIGMA: float | None = None
-    MU: float | None = None
-    ACTIVE_R: int = PACMAN_R
-    ACTIVE_T: float = PACMAN_T
-    KERNEL_TYPE = Species_types.PACMAN
-    CHANNEL_COUNT = 3
+    sigma = None 
+    mu = None
+    active_r = PACMAN_R
+    active_t = PACMAN_T
+    kernel_type = Species_types.PACMAN
+    channel_count = 3
 else:
-    SIGMA: float = GENERIC_S
-    MU: float = GENERIC_M
-    ACTIVE_R: int = GENERIC_R
-    ACTIVE_T: float = GENERIC_T
-    KERNEL_TYPE = Species_types.GENERIC
-    CHANNEL_COUNT = 1
+    sigma = GENERIC_S
+    mu = GENERIC_M
+    active_r = GENERIC_R
+    active_t = GENERIC_T
+    kernel_type = Species_types.GENERIC
+    channel_count = 1
 
 # -----------TIME STEP-----------------
-DT: float = 1.0 / ACTIVE_T
+DT: float = 1.0 / active_t
 
 # -----------FILTRE--------------------
-FILTRE_SIZE: int = 2 * ACTIVE_R + 1
+FILTRE_SIZE: int = 2 * active_r + 1
 
 # -------------Kernel du code référence pour generic-----------------
 MUS = [0.5]

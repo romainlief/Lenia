@@ -1,5 +1,5 @@
 import numpy as np
-from const.constantes import BOARD_SIZE, VOID_BOARD, CHANNEL_COUNT
+from const.constantes import BOARD_SIZE, VOID_BOARD, channel_count
 
 
 class Board:
@@ -10,7 +10,7 @@ class Board:
     def __init__(
         self,
         size: int = BOARD_SIZE,
-        channels: int = CHANNEL_COUNT,
+        channels: int = channel_count,
         void: bool = VOID_BOARD,
     ) -> None:
         """

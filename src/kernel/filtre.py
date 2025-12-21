@@ -1,7 +1,7 @@
 import numpy as np
 from const.constantes import (
-    SIGMA,
-    MU,
+    sigma,
+    mu,
     BOARD_SIZE,
     DT,
     WANDERER_M,
@@ -87,18 +87,24 @@ class Filtre:
         H, W = self.world_size
         mid_h, mid_w = H // 2, W // 2
         kernels_fft = []
-        for k in self.kernels:
-            y, x = np.ogrid[-mid_h:mid_h, -mid_w:mid_w]
-            # radius for this kernel (relative factor in pattern)
-            r_k = max(1e-6, self.R * k.get("r", 1.0))
-            # distance scaled by kernel radius and number of rings
-            D = np.sqrt(x**2 + y**2) / r_k * len(k["b"])
-            amplitudes = np.asarray(k["b"])[np.minimum(D.astype(int), len(k["b"]) - 1)]
-            K_local = amplitudes * self.growth_function.target(D % 1, 0.5, 0.15, None)
-            K_local[D >= len(k["b"])] = 0
-            K_local /= K_local.sum() if K_local.sum() > 0 else 1
-            kernels_fft.append(np.fft.fft2(np.fft.fftshift(K_local)))
-        return kernels_fft
+        if self.kernels is not None:
+            for k in self.kernels:
+                y, x = np.ogrid[-mid_h:mid_h, -mid_w:mid_w]
+                # radius for this kernel (relative factor in pattern)
+                r_k = max(1e-6, self.R * k.get("r", 1.0))
+                # distance scaled by kernel radius and number of rings
+                D = np.sqrt(x**2 + y**2) / r_k * len(k["b"])
+                amplitudes = np.asarray(k["b"])[
+                    np.minimum(D.astype(int), len(k["b"]) - 1)
+                ]
+                K_local = amplitudes * self.growth_function.target(
+                    D % 1, 0.5, 0.15, None
+                )
+                K_local[D >= len(k["b"])] = 0
+                K_local /= K_local.sum() if K_local.sum() > 0 else 1
+                kernels_fft.append(np.fft.fft2(np.fft.fftshift(K_local)))
+            return kernels_fft
+        return []
 
     def filtrer(self):
         """
@@ -160,6 +166,8 @@ class Filtre:
             and self.species_type == Species_types.FISH
         ):
             Ks = self.prepared_kernels_fft
+            if Ks is None:
+                raise ValueError("Kernels not prepared for Fish evolution.")
             Us = [np.real(np.fft.ifft2(fK * np.fft.fft2(X))) for fK in Ks]
             Gs = [
                 self.growth_function.bell_growth(U, k["m"], k["s"])
@@ -211,6 +219,10 @@ class Filtre:
                 funcs = [self.growth_function.bell_growth] * n_channels
 
             # for each kernel, compute its convolution on the source channel
+            if self.prepared_kernels_fft is None:
+                raise ValueError(
+                    "prepared_kernels_fft is None, cannot proceed with multi-channel convolution."
+                )
             for i, (fK, k) in enumerate(zip(self.prepared_kernels_fft, self.kernels)):
                 src = sources[i]
                 dst = dests[i]
@@ -222,7 +234,7 @@ class Filtre:
                 func = funcs[dst] if dst < len(funcs) else funcs[0]
                 if func is funcs[2]:  # target function needs A parameter
                     A_dst = X[dst]
-                    Gi = func(U, m, s, A_dst)
+                    Gi = func(U, m, s, float(np.mean(A_dst)))
                 else:
                     Gi = func(U, m, s, None)
                 Gs[dst] += h * Gi
@@ -235,6 +247,12 @@ class Filtre:
                 return [np.clip(Xi + DT * Gi, 0, 1) for Xi, Gi in zip(X, Gs)]
         else:  # Lenia classique
             K = self.filtrer()
+            if isinstance(K, list):
+                raise ValueError(
+                    "Expected a single kernel array, got a list. Check kernel configuration."
+                )
+            if K is None:
+                raise ValueError("Kernel is None. Check kernel configuration.")
             U = np.real(np.fft.ifft2(np.fft.fft2(X) * K))
             if self.species_type == Species_types.WANDERER:
                 X = np.clip(
@@ -247,6 +265,10 @@ class Filtre:
                     1,
                 )
             else:
-                X = X + DT * self.growth_function.gaussienne(U, SIGMA, MU)
+                if sigma is None or mu is None:
+                    raise ValueError(
+                        "sigma and mu must be defined for classic Lenia evolution."
+                    )
+                X = X + DT * self.growth_function.gaussienne(U, sigma, mu)
                 X = np.clip(X, 0, 1)
         return X

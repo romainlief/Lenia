@@ -19,7 +19,7 @@ from const.constantes import (
     USE_PACMAN_PARAMS,
     PACMAN_CELLS,
     PACMAN_KERNEL,
-    KERNEL_TYPE,
+    kernel_type,
     USE_HYDROGEMINIUM_PARAMS,
     USE_ORBIUM_PARAMS,
     USE_FISH_PARAMS,
@@ -34,13 +34,15 @@ from croissance.type_croissance import Growth_type
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from matplotlib.image import AxesImage
+from matplotlib.figure import Figure
 from scipy.ndimage import shift
 from species.species_types import Species_types
 
 
 class Simulation:
     def __init__(
-        self, size: int = BOARD_SIZE, kernel_type: Species_types = KERNEL_TYPE
+        self, size: int = BOARD_SIZE, kernel_type: Species_types = kernel_type
     ) -> None:
         """
         Initialize the simulation.
@@ -156,13 +158,16 @@ class Simulation:
 
         self.X_raw = self.grid.board.copy()
         # Représentation utilisée pour l'évolution : soit 2D, soit liste de plans (multi-canaux)
+        # x can be either a numpy array (single channel) or a list of numpy arrays (multi-channel)
+        self.x: np.ndarray | list[np.ndarray]
         if self.X_raw.ndim == 3 and self.multi_channel:
-            self.X = [self.X_raw[:, :, c].copy() for c in range(self.X_raw.shape[2])]
+            self.x = [self.X_raw[:, :, c].copy() for c in range(self.X_raw.shape[2])]
         elif self.X_raw.ndim == 3:
-            self.X = np.mean(self.X_raw, axis=2)
+            self.x = np.mean(self.X_raw, axis=2)
         else:
-            self.X = self.X_raw.copy()
+            self.x = self.X_raw.copy()
 
+        patch = None
         if USE_ORBIUM_PARAMS:
             orbium = Orbium()
             patch = orbium.make_patch(
@@ -191,13 +196,18 @@ class Simulation:
                 amplitude=4.0,
                 normalize=True,
             )
-        if not USE_AQUARIUM_PARAMS and not USE_EMITTER_PARAMS and not USE_PACMAN_PARAMS:
+        if (
+            not USE_AQUARIUM_PARAMS
+            and not USE_EMITTER_PARAMS
+            and not USE_PACMAN_PARAMS
+            and patch is not None
+        ):
             self.apply_patch(patch, center=(BOARD_SIZE // 2, BOARD_SIZE // 2))
 
     def apply_patch(
         self,
         patch: np.ndarray | None = None,
-        center: tuple | None = None,
+        center: tuple[int, int] | None = None,
         rotate: int = 0,
         amplitude: float = 1.0,
         normalize: bool = True,
@@ -216,12 +226,12 @@ class Simulation:
         if patch is None:
             return
 
-        arr = np.array(patch, dtype=float)
+        arr : np.ndarray = np.array(patch, dtype=float)
         if rotate % 4 != 0:
             arr = np.rot90(arr, -(rotate % 4))
 
         if normalize:
-            mx = arr.max()
+            mx: float = arr.max()
             if mx > 0:
                 arr /= mx
 
@@ -261,22 +271,22 @@ class Simulation:
             for dx in range(w):
                 y = (top + dy) % self.size
                 x = (left + dx) % self.size
-                if isinstance(self.X, list):
-                    for c in range(len(self.X)):
-                        self.X[c][y, x] = np.clip(self.X[c][y, x] + arr[dy, dx], 0, 1)
+                if isinstance(self.x, list):
+                    for c in range(len(self.x)):
+                        self.x[c][y, x] = np.clip(self.x[c][y, x] + arr[dy, dx], 0, 1)
                 else:
-                    self.X[y, x] = np.clip(self.X[y, x] + arr[dy, dx], 0, 1)
+                    self.x[y, x] = np.clip(self.x[y, x] + arr[dy, dx], 0, 1)
 
         # synchronize the raw multi-channel grid
         if hasattr(self, "X_raw") and self.X_raw.ndim == 3:
-            if isinstance(self.X, list):
-                self.X_raw = np.clip(np.stack(self.X, axis=2), 0, 1)
+            if isinstance(self.x, list):
+                self.X_raw = np.clip(np.stack(self.x, axis=2), 0, 1)
             else:
                 self.X_raw = np.clip(
-                    np.stack([self.X] * self.X_raw.shape[2], axis=2), 0, 1
+                    np.stack([self.x] * self.X_raw.shape[2], axis=2), 0, 1
                 )
 
-    def __update(self, frame: int) -> list:
+    def __update(self, frame: int) -> list[AxesImage]:
         """
         Update the simulation for 1 channel board
 
@@ -284,20 +294,29 @@ class Simulation:
             frame (int): The current frame number.
 
         Returns:
-            list: A list containing the updated image.
+            list[AxesImage]: A list containing the updated image.
         """
-        self.X = self.filtre.evolve_lenia(self.X)
-        display = self.X
+        # Ensure self.x is a numpy ndarray for single-channel update
+        if isinstance(self.x, list):
+            x_input = np.mean(np.stack(self.x, axis=2), axis=2)
+        else:
+            x_input = self.x
+        result = self.filtre.evolve_lenia(x_input)
+        if isinstance(result, list):
+            self.x = np.mean(np.stack(result, axis=2), axis=2)
+        else:
+            self.x = result
+        display = self.x
         self.img.set_data(display)
         return [self.img]
 
-    def _enable_resize(self, fig: plt.Figure) -> None:
+    def _enable_resize(self, fig: Figure) -> None:
         """
         Attach a resize handler so the figure redraws and layout updates when
         the window is resized (useful for GUI backends).
         
         Args:
-            fig (plt.Figure): The matplotlib figure to attach the resize handler to.
+            fig (Figure): The matplotlib figure to attach the resize handler to.
         """
         def _on_resize(event):
             """
@@ -310,7 +329,7 @@ class Simulation:
             fig.canvas.draw_idle()
         fig.canvas.mpl_connect("resize_event", _on_resize)
     
-    def zoom_in(self, fig: plt.Figure, factor: float = 1.1) -> None:
+    def zoom_in(self, fig: Figure, factor: float = 1.1) -> None:
         """
         Zoom in the current view of the figure.
 
@@ -374,7 +393,7 @@ class Simulation:
         Run the simulation for single-channel boards.
         """
         fig, ax = plt.subplots()
-        self.img = ax.imshow(self.X, cmap="inferno", interpolation="none")
+        self.img = ax.imshow(self.x, cmap="inferno", interpolation="none")
         ax.set_title("Lenia")
         ax.set_xticks([])
         ax.set_yticks([])
@@ -399,12 +418,12 @@ class Simulation:
         Returns:
             None
         """
-        if not isinstance(self.X, list):
+        if not isinstance(self.x, list):
             raise RuntimeError(
                 "run_multi requires multi-channel board (self.X as list)"
             )
         fig, ax = plt.subplots()
-        im = ax.imshow(np.dstack(self.X), interpolation=interpolation)
+        im = ax.imshow(np.dstack(self.x), interpolation=interpolation)
         ax.axis("off")
         ax.set_title("Lenia Multi-Channel")
 
@@ -416,8 +435,12 @@ class Simulation:
                 _type_: _tuple of im
             """
             nonlocal im
-            self.X = self.filtre.evolve_lenia(self.X)
-            im.set_array(np.dstack([self.X[1], self.X[2], self.X[0]]))
+            result = self.filtre.evolve_lenia(self.x)
+            if not isinstance(result, list):
+                self.x = [result] if result.ndim == 2 else list(result)
+            else:
+                self.x = result
+            im.set_array(np.dstack([self.x[1], self.x[2], self.x[0]]))
             # a choisir entre les deux styles d'affichage:
             # im.set_array(np.dstack(self.X))
             return (im,)

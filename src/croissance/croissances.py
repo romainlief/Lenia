@@ -1,5 +1,5 @@
 import numpy as np
-from const.constantes import SIGMA, MU
+from const.constantes import sigma, mu
 from croissance.type_croissance import Growth_type
 
 
@@ -31,7 +31,9 @@ class Statistical_growth_function:
             np.ndarray: The array of values.
         """
         if self.type == Growth_type.GAUSSIENNE:
-            return self.gaussienne(x, sigma=SIGMA, mu=MU)
+            if sigma is None or mu is None:
+                raise ValueError("Les paramètres sigma et mu ne doivent pas être None.")
+            return self.gaussienne(x, sigma=sigma, mu=mu)
         else:
             raise ValueError("Type de fonction de croissance non reconnu.")
 
