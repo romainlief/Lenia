@@ -65,9 +65,9 @@ class SimulationInterface:
         ax.set_xticks([])
         ax.set_yticks([])
 
-        axpause = plt.axes([0.7, 0.01, 0.1, 0.05])
-        axresume = plt.axes([0.81, 0.01, 0.1, 0.05])
-        axreset = plt.axes([0.59, 0.01, 0.1, 0.05])
+        axpause = plt.axes((0.7, 0.01, 0.1, 0.05))
+        axresume = plt.axes((0.81, 0.01, 0.1, 0.05))
+        axreset = plt.axes((0.59, 0.01, 0.1, 0.05))
         bpause = Button(axpause, "Pause")
         bresume = Button(axresume, "Reprendre")
         breset = Button(axreset, "Reset")
@@ -96,7 +96,7 @@ class SimulationInterface:
         def reset(event):
             if self.simulation.X_raw is not None:
                 self.simulation.reset()
-            self.img.set_data(self.simulation.x.cpu().numpy())
+            self.img.set_data(self.simulation.x.cpu().numpy()) # type: ignore
             fig.canvas.draw_idle()
 
         bpause.on_clicked(pause)
@@ -138,17 +138,19 @@ class SimulationInterface:
             fig, update_multi, frames=num_steps, interval=50, blit=False
         )
 
-        axpause = plt.axes([0.7, 0.01, 0.1, 0.05])
-        axresume = plt.axes([0.81, 0.01, 0.1, 0.05])
-        axreset = plt.axes([0.59, 0.01, 0.1, 0.05])
+        axpause = plt.axes((0.7, 0.01, 0.1, 0.05))
+        axresume = plt.axes((0.81, 0.01, 0.1, 0.05))
+        axreset = plt.axes((0.59, 0.01, 0.1, 0.05))
         bpause = Button(axpause, "Pause")
         bresume = Button(axresume, "Reprendre")
         breset = Button(axreset, "Reset")
 
         def pause(event):
             ani.event_source.stop()
+            
         def resume(event):
             ani.event_source.start()
+            
         def reset(event):
             if self.simulation.X_raw is not None:
                 self.simulation.reset()
