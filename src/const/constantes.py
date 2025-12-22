@@ -12,10 +12,10 @@ SIMULATION_MODE: bool = True  # True for simulation, False for Exploration
 USE_ORBIUM_PARAMS: bool = False
 USE_HYDROGEMINIUM_PARAMS: bool = False
 USE_FISH_PARAMS: bool = False
-USE_AQUARIUM_PARAMS: bool = True
+USE_AQUARIUM_PARAMS: bool = False
 USE_WANDERER_PARAMS: bool = False
 USE_EMITTER_PARAMS: bool = False  
-USE_PACMAN_PARAMS: bool = False 
+USE_PACMAN_PARAMS: bool = True 
 
 # ----------- PARAMETRES ORBIUM -----------
 ORBIUM_M: float = pattern["orbium"].get("m", 0)  # mu de la croissance pour cet orbium

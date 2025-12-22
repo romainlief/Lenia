@@ -179,7 +179,7 @@ class Filtre:
                 self.growth_function.bell_growth(U, k["m"], k["s"])
                 for U, k in zip(Us, self.kernels)
             ]
-            X = torch.clamp(X + DT * torch.mean(torch.stack(Gs), dim=0), 0, 1)
+            X = torch.clamp(X + DT * torch.mean(torch.stack(Gs), dim=0), 0, 1) # type: ignore
             return X  # <-- il manquait le return ici dans certains cas
 
         # --- Multi-channel mode (Aquarium / Emitter / Pacman) ---
@@ -222,7 +222,7 @@ class Filtre:
             n_channels = len(X)
             funcs = [self.growth_function.bell_growth] * n_channels
             if n_channels == 3 and self.species_type == Species_types.EMITTER:
-                funcs[2] = self.growth_function.target  # target function for channel 2
+                funcs[2] = self.growth_function.target # type: ignore
 
             if self.prepared_kernels_fft is None:
                 raise ValueError("prepared_kernels_fft is None, cannot proceed.")
@@ -253,11 +253,17 @@ class Filtre:
             if K is None or isinstance(K, list):
                 raise ValueError("Kernel invalid for classic Lenia.")
 
-            x = X.clone().detach()
+            if isinstance(X, torch.Tensor):
+                x = X.clone().detach()
+            else:
+                raise TypeError("X must be a torch.Tensor for WANDERER species type.")
             U = torch.real(torch.fft.ifft2(torch.fft.fft2(x) * K))
 
             if self.species_type == Species_types.WANDERER:
-                x = X.clone().detach()
+                if isinstance(X, torch.Tensor):
+                    x = X.clone().detach()
+                else:
+                    raise TypeError("X must be a torch.Tensor for WANDERER species type.")
                 target = self.growth_function.target(U, WANDERER_M, WANDERER_S, None)
                 x = torch.clamp(x + DT * (target - x), 0, 1)
                 return x

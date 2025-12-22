@@ -187,7 +187,7 @@ class Simulation:
         if self.X_raw.ndim == 3 and self.multi_channel:
             self.x = [self.X_raw[:, :, c].clone() for c in range(self.X_raw.shape[2])]
         elif self.X_raw.ndim == 3:
-            self.x = torch.mean(self.X_raw, axis=2)
+            self.x = torch.mean(self.X_raw, axis=2) # type: ignore
         else:
             self.x = self.X_raw.clone()
         patch = None
@@ -278,7 +278,7 @@ class Simulation:
 
         arr = shift(
             arr.cpu().numpy(),
-            shift=(dy.item(), dx.item()),
+            shift=(dy, dx),
             order=1,
             mode="constant",
             cval=0.0,
@@ -332,7 +332,6 @@ class Simulation:
 
         # Appeler evolve_lenia en convertissant les sorties en torch.Tensor
         result = self.filtre.evolve_lenia(x_input)
-        print(type(result))
         if not isinstance(result, torch.Tensor):
             result = torch.tensor(result, dtype=torch.float32)
         elif isinstance(result, list):
