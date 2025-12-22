@@ -6,7 +6,7 @@
 
 ## TODO GENERAL
 
-- Refactoring
+- Refactoring dans interface.py
 - Faire du machine learning avec les cellules
 - Améliorer le readme
 - Ajouter des obstacles sur les maps
