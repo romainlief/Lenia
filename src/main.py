@@ -1,10 +1,10 @@
-from launcher.simulation import Simulation
+from launcher.launcher import Launcher
 
 
 if __name__ == "__main__":
     try:
-        sim = Simulation()
-        sim.run()
+        launcher = Launcher()
+        launcher.launch()
     except KeyboardInterrupt:
         print("Simulation interrompue par l'utilisateur.")
     except Exception as e:

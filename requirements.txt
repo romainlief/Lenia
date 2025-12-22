@@ -9,3 +9,4 @@ ipython
 torch
 torchvision
 moviepy
+opencv-python
