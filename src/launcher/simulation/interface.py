@@ -89,22 +89,18 @@ class SimulationInterface:
         else:
             self._run()
 
-    def _run(self):
+    def _run(self, cmap_list=cmap_list):
         fig, ax = plt.subplots()
         self.img = ax.imshow(self.simulation.x, cmap="inferno", interpolation="none")
         ax.set_title("Lenia")
         ax.set_xticks([])
         ax.set_yticks([])
 
-        bpause, bresume, breset, bcolormap, bspeedup = self.create_buttons(fig)
+        bpause, bresume, breset, bcolormap = self.create_buttons(fig)
 
-        # Prépare la liste des colormaps uniquement si channel_count == 1
         axcmaps = plt.axes((0.01, 0.01, 0.15, 0.18))
         radio = RadioButtons(axcmaps, cmap_list, active=0)
-        if channel_count > 1:
-            axcmaps.set_visible(False)
-        else:
-            axcmaps.set_visible(False)
+        axcmaps.set_visible(False)  # Toujours invisible au départ
 
         def update(frame):
             result = self.simulation.filtre.evolve_lenia(self.simulation.x)
@@ -132,14 +128,15 @@ class SimulationInterface:
         def reset(event):
             if self.simulation.X_raw is not None:
                 self.simulation.reset()
-            self.img.set_data(self.simulation.x.cpu().numpy())
+            self.img.set_data(self.simulation.x.cpu().numpy())  # type: ignore
             fig.canvas.draw_idle()
 
         def show_cmap(event):
-            axcmaps.set_visible(not axcmaps.get_visible())
+            axcmaps.set_visible(True)
             fig.canvas.draw_idle()
 
         def change_cmap(label):
+            axcmaps.set_visible(False)  # Masque après sélection
             self.img.set_cmap(label)
             fig.canvas.draw_idle()
 
@@ -193,7 +190,7 @@ class SimulationInterface:
             fig, update_multi, frames=num_steps, interval=50, blit=False
         )
 
-        bpause, bresume, breset, bcolormap, bspeedup = self.create_buttons(fig)
+        bpause, bresume, breset, bcolormap = self.create_buttons(fig)
 
         def pause(event):
             ani.event_source.stop()
@@ -215,6 +212,13 @@ class SimulationInterface:
             im.set_array(rgb)
             fig.canvas.draw_idle()
 
+        def change_speed(val):
+            try:
+                new_interval = max(1, int(50 / val))
+                ani.event_source.interval = new_interval
+            except Exception:
+                pass
+
         bpause.on_clicked(pause)
         bresume.on_clicked(resume)
         breset.on_clicked(reset)
@@ -227,26 +231,13 @@ class SimulationInterface:
         axpause = plt.axes((0.7, 0.01, len(STR_BUTTON_PAUSE) * 0.02, 0.05))
         axresume = plt.axes((0.81, 0.01, len(STR_BUTTON_RESUME) * 0.02, 0.05))
         axreset = plt.axes((0.59, 0.01, len(STR_BUTTON_RESET) * 0.02, 0.05))
-        axspeedup = plt.axes((0.1, 0.1, len(STR_BUTTON_SPEED_UP) * 0.002, 0.2))
         bpause = Button(axpause, STR_BUTTON_PAUSE)
         bresume = Button(axresume, STR_BUTTON_RESUME)
         breset = Button(axreset, STR_BUTTON_RESET)
-        bspeedup = Slider(
-            axspeedup,
-            STR_BUTTON_SPEED_UP,
-            0.1,
-            2.0,
-            valinit=1.0,
-            orientation="vertical",
-            valstep=0.1,
-            dragging=True,
-        )
-        # Ajouter un callback vide au slider pour éviter qu'il déclenche des actions
-        bspeedup.on_changed(lambda val: None)
 
         if channel_count == 1:
             axcolormap = plt.axes((0.38, 0.01, len(STR_BUTTON_CMAP) * 0.02, 0.05))
             bcolormap = Button(axcolormap, STR_BUTTON_CMAP)
-            return bpause, bresume, breset, bcolormap, bspeedup
+            return bpause, bresume, breset, bcolormap
         else:
-            return bpause, bresume, breset, None, bspeedup
+            return bpause, bresume, breset, None

@@ -11,5 +11,3 @@ STR_BUTTON_RESET = "Reset"
 # TODO:
 STR_BUTTON_CMAP = "Colormap"
 cmap_list = ["inferno", "viridis", "plasma", "magma", "cividis"]
-
-STR_BUTTON_SPEED_UP = "Change Speed"
