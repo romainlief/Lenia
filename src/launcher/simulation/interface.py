@@ -4,7 +4,7 @@ from matplotlib.widgets import Button, Slider, RadioButtons
 from matplotlib.figure import Figure
 import torch
 from ..simulation.const.constantes import *
-from const.constantes import channel_count
+from const import constantes as CONST
 from ..simulation.simulation import Simulation
 
 
@@ -89,6 +89,33 @@ class SimulationInterface:
         else:
             self._run()
 
+    def create_species_selector(self, fig: Figure):
+        """Crée et retourne un sélecteur d'espèce (RadioButtons) et son axe."""
+        ax_species = plt.axes((0.02, 0.30, 0.15, 0.40))
+        try:
+            active_index = CONST.AVAILABLE_SPECIES.index(CONST.CURRENT_SPECIES)
+        except Exception:
+            active_index = 0
+        radio_species = RadioButtons(ax_species, CONST.AVAILABLE_SPECIES, active=active_index)
+        ax_species.set_visible(False)
+
+        def on_species_selected(label):
+            # Met à jour les constantes et reconfigure la simulation
+            new_kernel_type = CONST.set_species_parameters(label)
+            self.simulation.reinitialize_species(new_kernel_type)
+            ax_species.set_visible(False)
+            # Ferme la figure et relance l'interface selon multi/single
+            try:
+                plt.close(fig)
+            except Exception:
+                pass
+            # Met à jour le flag multi_channel et relance
+            self.multi_channel = self.simulation.multi_channel
+            self.run()
+
+        radio_species.on_clicked(on_species_selected)
+        return radio_species, ax_species
+
     def _run(self, cmap_list=cmap_list):
         fig, ax = plt.subplots()
         self.img = ax.imshow(self.simulation.x, cmap="inferno", interpolation="none")
@@ -96,7 +123,9 @@ class SimulationInterface:
         ax.set_xticks([])
         ax.set_yticks([])
 
-        bpause, bresume, breset, bcolormap = self.create_buttons(fig)
+        bpause, bresume, breset, bcolormap, bspecies = self.create_buttons(fig)
+
+        radio_species, ax_species = self.create_species_selector(fig)
 
         axcmaps = plt.axes((0.01, 0.01, 0.15, 0.18))
         radio = RadioButtons(axcmaps, cmap_list, active=0)
@@ -135,6 +164,10 @@ class SimulationInterface:
             axcmaps.set_visible(True)
             fig.canvas.draw_idle()
 
+        def show_species(event):
+            ax_species.set_visible(True)
+            fig.canvas.draw_idle()
+
         def change_cmap(label):
             axcmaps.set_visible(False)  # Masque après sélection
             self.img.set_cmap(label)
@@ -143,9 +176,11 @@ class SimulationInterface:
         bpause.on_clicked(pause)
         bresume.on_clicked(resume)
         breset.on_clicked(reset)
-        if channel_count == 1 and bcolormap is not None:
+        if self.simulation.channel_count == 1 and bcolormap is not None:
             bcolormap.on_clicked(show_cmap)
             radio.on_clicked(change_cmap)
+        # Toujours disponible
+        bspecies.on_clicked(show_species)
 
         self._enable_resize(fig)
         self.zoom_in(fig=fig)
@@ -162,6 +197,9 @@ class SimulationInterface:
         )
         ax.axis("off")
         ax.set_title("Lenia Multi-Channel")
+
+        # Bouton d'ouverture du sélecteur d'espèce
+        radio_species, ax_species = self.create_species_selector(fig)
 
         def update_multi(i):
             result = self.simulation.filtre.evolve_lenia(self.simulation.x)
@@ -190,7 +228,7 @@ class SimulationInterface:
             fig, update_multi, frames=num_steps, interval=50, blit=False
         )
 
-        bpause, bresume, breset, bcolormap = self.create_buttons(fig)
+        bpause, bresume, breset, bcolormap, bspecies = self.create_buttons(fig)
 
         def pause(event):
             ani.event_source.stop()
@@ -222,22 +260,26 @@ class SimulationInterface:
         bpause.on_clicked(pause)
         bresume.on_clicked(resume)
         breset.on_clicked(reset)
+        bspecies.on_clicked(lambda evt: (ax_species.set_visible(True), fig.canvas.draw_idle()))
 
         self._enable_resize(fig)
         self.zoom_in(fig=fig)
         plt.show()
 
-    def create_buttons(self, fig: Figure, channel_count: int = channel_count):
+    def create_buttons(self, fig: Figure):
         axpause = plt.axes((0.7, 0.01, len(STR_BUTTON_PAUSE) * 0.02, 0.05))
         axresume = plt.axes((0.81, 0.01, len(STR_BUTTON_RESUME) * 0.02, 0.05))
         axreset = plt.axes((0.59, 0.01, len(STR_BUTTON_RESET) * 0.02, 0.05))
+        ax_species_btn = plt.axes((0.26, 0.01, 0.12, 0.05))
         bpause = Button(axpause, STR_BUTTON_PAUSE)
         bresume = Button(axresume, STR_BUTTON_RESUME)
         breset = Button(axreset, STR_BUTTON_RESET)
+        bspecies = Button(ax_species_btn, "Species")
 
-        if channel_count == 1:
+        count = self.simulation.channel_count
+        if count == 1:
             axcolormap = plt.axes((0.38, 0.01, len(STR_BUTTON_CMAP) * 0.02, 0.05))
             bcolormap = Button(axcolormap, STR_BUTTON_CMAP)
-            return bpause, bresume, breset, bcolormap
+            return bpause, bresume, breset, bcolormap, bspecies
         else:
-            return bpause, bresume, breset, None
+            return bpause, bresume, breset, None, bspecies

@@ -8,6 +8,18 @@ VOID_BOARD: bool = True
 channel_count: int = 1
 SIMULATION_MODE: bool = True  # True for simulation, False for Exploration
 
+# --- SPECIES LIST FOR GUI ---
+AVAILABLE_SPECIES = [
+    "orbium",
+    "hydrogeminium",
+    "fish",
+    "aquarium",
+    "wanderer",
+    "emitter",
+    "pacman",
+]
+CURRENT_SPECIES: str = "orbium"
+
 # --- CHOOSE ---
 USE_ORBIUM_PARAMS: bool = True
 USE_HYDROGEMINIUM_PARAMS: bool = False
@@ -172,3 +184,73 @@ FILTRE_SIZE: int = 2 * active_r + 1
 # -------------Kernel du code référence pour generic-----------------
 MUS = [0.5]
 SIGMAS = [0.15]
+
+# --- Runtime species switch for GUI ---
+def set_species_parameters(species_name: str) -> Species_types:
+    """Met à jour les paramètres actifs en fonction de l'espèce et retourne le type."""
+    global sigma, mu, active_r, active_t, kernel_type, channel_count, CURRENT_SPECIES
+
+    name = species_name.lower()
+    CURRENT_SPECIES = name
+    if name == "orbium":
+        sigma = ORBIUM_S
+        mu = ORBIUM_M
+        active_r = ORBIUM_R
+        active_t = ORBIUM_T
+        kernel_type = Species_types.ORBIUM
+        channel_count = 1
+    elif name == "hydrogeminium":
+        sigma = HYDROGEMINIUM_S
+        mu = HYDROGEMINIUM_M
+        active_r = HYDROGEMINIUM_R
+        active_t = HYDROGEMINIUM_T
+        kernel_type = Species_types.HYDROGEMINIUM
+        channel_count = 1
+    elif name == "fish":
+        sigma = None
+        mu = None
+        active_r = FISH_R
+        active_t = FISH_T
+        kernel_type = Species_types.FISH
+        channel_count = 1
+    elif name == "aquarium":
+        sigma = None
+        mu = None
+        active_r = AQUARIUM_R
+        active_t = AQUARIUM_T
+        kernel_type = Species_types.AQUARIUM
+        channel_count = 3
+    elif name == "wanderer":
+        sigma = WANDERER_S
+        mu = WANDERER_M
+        active_r = WANDERER_R
+        active_t = WANDERER_T
+        kernel_type = Species_types.WANDERER
+        channel_count = 1
+    elif name == "emitter":
+        sigma = None
+        mu = None
+        active_r = EMITTER_R
+        active_t = EMITTER_T
+        kernel_type = Species_types.EMITTER
+        channel_count = 3
+    elif name == "pacman":
+        sigma = None
+        mu = None
+        active_r = PACMAN_R
+        active_t = PACMAN_T
+        kernel_type = Species_types.PACMAN
+        channel_count = 3
+    else:
+        sigma = GENERIC_S
+        mu = GENERIC_M
+        active_r = GENERIC_R
+        active_t = GENERIC_T
+        kernel_type = Species_types.GENERIC
+        channel_count = 1
+
+    # Mettre à jour les dérivés
+    global DT, FILTRE_SIZE
+    DT = 1.0 / active_t
+    FILTRE_SIZE = 2 * active_r + 1
+    return kernel_type

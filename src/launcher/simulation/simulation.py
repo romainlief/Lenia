@@ -1,32 +1,7 @@
 from space.box_space import BoxSpace
 from croissance.croissances import Statistical_growth_function
 from kernel.filtre import Filtre
-from const.constantes import (
-    FILTRE_SIZE,
-    ORBIUM_B,
-    MUS,
-    SIGMAS,
-    USE_AQUARIUM_PARAMS,
-    AQUARIUM_CELLS,
-    AQUARIUM_KERNEL,
-    USE_EMITTER_PARAMS,
-    EMITTER_CELLS,
-    EMITTER_KERNEL,
-    HYDROGEMINIUM_B,
-    BOARD_SIZE,
-    FISH_KERNEL,
-    WANDERER_B,
-    USE_PACMAN_PARAMS,
-    PACMAN_CELLS,
-    PACMAN_KERNEL,
-    kernel_type,
-    USE_HYDROGEMINIUM_PARAMS,
-    USE_ORBIUM_PARAMS,
-    USE_FISH_PARAMS,
-    USE_WANDERER_PARAMS,
-    channel_count,
-    VOID_BOARD,
-)
+from const import constantes as CONST
 from species.orbium import Orbium
 from species.hydrogeminium import Hydrogeminium
 from species.fish import Fish
@@ -40,9 +15,9 @@ from scipy.ndimage import shift
 class Simulation:
     def __init__(
         self,
-        size: int = BOARD_SIZE,
-        kernel_type: Species_types = kernel_type,
-        channel_count: int = channel_count,
+        size: int = CONST.BOARD_SIZE,
+        kernel_type: Species_types = CONST.kernel_type,
+        channel_count: int | None = None,
     ) -> None:
         """
         Initialize the simulation.
@@ -50,62 +25,70 @@ class Simulation:
         kernel_type : Type of species kernel to use
         """
         self.size = size
-        self.channel_count = channel_count
+        # Déterminer dynamiquement le nombre de canaux
+        if channel_count is None:
+            if kernel_type in (Species_types.AQUARIUM, Species_types.EMITTER, Species_types.PACMAN):
+                self.channel_count = 3
+            else:
+                self.channel_count = 1
+        else:
+            self.channel_count = channel_count
 
         self.space = BoxSpace(
             low=0.0,
             high=1.0,
-            shape=(size, size, channel_count),
+            shape=(size, size, self.channel_count),
             dtype=torch.float32,
         )
-        if VOID_BOARD:
+        if CONST.VOID_BOARD:
             self.X_raw = torch.zeros(self.space.shape, dtype=torch.float32)
         else:
             self.X_raw = torch.rand(self.space.shape, dtype=torch.float32)
 
         self.multi_channel: bool = self.channel_count > 1
 
-        if USE_AQUARIUM_PARAMS:
+        if CONST.USE_AQUARIUM_PARAMS:
             self.place_multi_chan_species(
                 self.X_raw,
-                AQUARIUM_CELLS,
+                CONST.AQUARIUM_CELLS,
                 self.X_raw.shape[0] // 2,
                 self.X_raw.shape[1] // 2,
             )
 
-        if USE_EMITTER_PARAMS:
+        if CONST.USE_EMITTER_PARAMS:
             self.place_multi_chan_species(
                 self.X_raw,
-                EMITTER_CELLS,
+                CONST.EMITTER_CELLS,
                 self.X_raw.shape[0] // 2,
                 self.X_raw.shape[1] // 2,
             )
 
-        if USE_PACMAN_PARAMS:
+        if CONST.USE_PACMAN_PARAMS:
             self.place_multi_chan_species(
                 self.X_raw,
-                PACMAN_CELLS,
+                CONST.PACMAN_CELLS,
                 self.X_raw.shape[0] // 2,
                 self.X_raw.shape[1] // 2,
             )
 
+        filter_size = 2 * CONST.active_r + 1
         if kernel_type == Species_types.HYDROGEMINIUM:
-            b = HYDROGEMINIUM_B
+            b = CONST.HYDROGEMINIUM_B
             self.filtre = Filtre(
                 growth_function=Statistical_growth_function(
                     type=Growth_type.GAUSSIENNE,
                 ),
-                size=FILTRE_SIZE,
+                size=filter_size,
                 b=b,
                 species_type=Species_types.HYDROGEMINIUM,
             )
         elif kernel_type == Species_types.ORBIUM:
-            b = ORBIUM_B
+            b = CONST.ORBIUM_B
             self.filtre = Filtre(
                 growth_function=Statistical_growth_function(
                     type=Growth_type.GAUSSIENNE
                 ),
-                size=FILTRE_SIZE,
+                size=filter_size,
                 b=b,
                 species_type=Species_types.ORBIUM,
             )
@@ -114,31 +97,31 @@ class Simulation:
                 growth_function=Statistical_growth_function(
                     type=Growth_type.GAUSSIENNE
                 ),
-                size=FILTRE_SIZE,
+                size=filter_size,
                 b=None,
-                kernels=FISH_KERNEL,
+                kernels=CONST.FISH_KERNEL,
                 species_type=Species_types.FISH,
             )
-            self.filtre.kernels = FISH_KERNEL
+            self.filtre.kernels = CONST.FISH_KERNEL
         elif kernel_type == Species_types.AQUARIUM:
             self.filtre = Filtre(
                 growth_function=Statistical_growth_function(
                     type=Growth_type.GAUSSIENNE
                 ),
-                size=FILTRE_SIZE,
+                size=filter_size,
                 b=None,
-                kernels=AQUARIUM_KERNEL,
+                kernels=CONST.AQUARIUM_KERNEL,
                 multi_channel=self.multi_channel,
                 species_type=Species_types.AQUARIUM,
             )
-            self.filtre.kernels = AQUARIUM_KERNEL
+            self.filtre.kernels = CONST.AQUARIUM_KERNEL
         elif kernel_type == Species_types.WANDERER:
-            b = WANDERER_B
+            b = CONST.WANDERER_B
             self.filtre = Filtre(
                 growth_function=Statistical_growth_function(
                     type=Growth_type.GAUSSIENNE
                 ),
-                size=FILTRE_SIZE,
+                size=filter_size,
                 b=b,
                 species_type=Species_types.WANDERER,
             )
@@ -147,33 +130,33 @@ class Simulation:
                 growth_function=Statistical_growth_function(
                     type=Growth_type.GAUSSIENNE
                 ),
-                size=FILTRE_SIZE,
+                size=filter_size,
                 b=None,
-                kernels=EMITTER_KERNEL,
+                kernels=CONST.EMITTER_KERNEL,
                 multi_channel=self.multi_channel,
                 species_type=Species_types.EMITTER,
             )
-            self.filtre.kernels = EMITTER_KERNEL
+            self.filtre.kernels = CONST.EMITTER_KERNEL
         elif kernel_type == Species_types.PACMAN:
             self.filtre = Filtre(
                 growth_function=Statistical_growth_function(
                     type=Growth_type.GAUSSIENNE
                 ),
-                size=FILTRE_SIZE,
+                size=filter_size,
                 b=None,
-                kernels=PACMAN_KERNEL,
+                kernels=CONST.PACMAN_KERNEL,
                 multi_channel=self.multi_channel,
                 species_type=Species_types.PACMAN,
             )
-            self.filtre.kernels = PACMAN_KERNEL
+            self.filtre.kernels = CONST.PACMAN_KERNEL
         else:  # generic
             self.filtre = Filtre(
                 growth_function=Statistical_growth_function(
                     type=Growth_type.GAUSSIENNE
                 ),
-                size=FILTRE_SIZE,
-                mus=MUS,
-                sigmas=SIGMAS,
+                size=filter_size,
+                mus=CONST.MUS,
+                sigmas=CONST.SIGMAS,
                 species_type=Species_types.GENERIC,
             )
 
@@ -186,28 +169,28 @@ class Simulation:
         else:
             self.x = self.X_raw.clone()
         patch = None
-        if USE_ORBIUM_PARAMS:
+        if CONST.USE_ORBIUM_PARAMS:
             orbium = Orbium()
             patch = orbium.make_patch(
                 rotate=0,
                 amplitude=4.0,
                 normalize=True,
             )
-        elif USE_HYDROGEMINIUM_PARAMS:
+        elif CONST.USE_HYDROGEMINIUM_PARAMS:
             hydrogenium = Hydrogeminium()
             patch = hydrogenium.make_patch(
                 rotate=0,
                 amplitude=4.0,
                 normalize=True,
             )
-        elif USE_FISH_PARAMS:
+        elif CONST.USE_FISH_PARAMS:
             fish = Fish()
             patch = fish.make_patch(
                 rotate=0,
                 amplitude=4.0,
                 normalize=True,
             )
-        elif USE_WANDERER_PARAMS:
+        elif CONST.USE_WANDERER_PARAMS:
             wanderer = Wanderer()
             patch = wanderer.make_patch(
                 rotate=0,
@@ -215,12 +198,12 @@ class Simulation:
                 normalize=True,
             )
         if (
-            not USE_AQUARIUM_PARAMS
-            and not USE_EMITTER_PARAMS
-            and not USE_PACMAN_PARAMS
+            not CONST.USE_AQUARIUM_PARAMS
+            and not CONST.USE_EMITTER_PARAMS
+            and not CONST.USE_PACMAN_PARAMS
             and patch is not None
         ):
-            self.apply_patch(patch, center=(BOARD_SIZE // 2, BOARD_SIZE // 2))
+            self.apply_patch(patch, center=(CONST.BOARD_SIZE // 2, CONST.BOARD_SIZE // 2))
 
     def apply_patch(
         self,
@@ -347,3 +330,149 @@ class Simulation:
                 self.x = torch.mean(self.X_raw, axis=2)  # type: ignore
             else:
                 self.x = self.X_raw.clone()
+
+    @staticmethod
+    def _get_channel_count_for_species(kernel_type: Species_types) -> int:
+        """Retourne le nombre de canaux requis pour une espèce."""
+        if kernel_type in (Species_types.AQUARIUM, Species_types.EMITTER, Species_types.PACMAN):
+            return 3
+        return 1
+
+    def reinitialize_species(self, kernel_type: Species_types) -> None:
+        """Réinitialise complètement la simulation avec une nouvelle espèce."""
+        # Mettre à jour le nombre de canaux selon l'espèce
+        self.channel_count = Simulation._get_channel_count_for_species(kernel_type)
+        self.multi_channel = self.channel_count > 1
+
+        # Redimensionner l'espace
+        self.space = BoxSpace(
+            low=0.0,
+            high=1.0,
+            shape=(self.size, self.size, self.channel_count),
+            dtype=torch.float32,
+        )
+
+        # Réinitialiser le board
+        if CONST.VOID_BOARD:
+            self.X_raw = torch.zeros(self.space.shape, dtype=torch.float32)
+        else:
+            self.X_raw = torch.rand(self.space.shape, dtype=torch.float32)
+
+        # Placer les cellules multi-canaux si nécessaire
+        if kernel_type == Species_types.AQUARIUM:
+            self.place_multi_chan_species(
+                self.X_raw,
+                CONST.AQUARIUM_CELLS,
+                self.X_raw.shape[0] // 2,
+                self.X_raw.shape[1] // 2,
+            )
+        elif kernel_type == Species_types.EMITTER:
+            self.place_multi_chan_species(
+                self.X_raw,
+                CONST.EMITTER_CELLS,
+                self.X_raw.shape[0] // 2,
+                self.X_raw.shape[1] // 2,
+            )
+        elif kernel_type == Species_types.PACMAN:
+            self.place_multi_chan_species(
+                self.X_raw,
+                CONST.PACMAN_CELLS,
+                self.X_raw.shape[0] // 2,
+                self.X_raw.shape[1] // 2,
+            )
+
+        # Recréer le filtre pour l'espèce choisie
+        filter_size = 2 * CONST.active_r + 1
+        if kernel_type == Species_types.HYDROGEMINIUM:
+            b = CONST.HYDROGEMINIUM_B
+            self.filtre = Filtre(
+                growth_function=Statistical_growth_function(type=Growth_type.GAUSSIENNE),
+                size=filter_size,
+                b=b,
+                species_type=Species_types.HYDROGEMINIUM,
+            )
+        elif kernel_type == Species_types.ORBIUM:
+            b = CONST.ORBIUM_B
+            self.filtre = Filtre(
+                growth_function=Statistical_growth_function(type=Growth_type.GAUSSIENNE),
+                size=filter_size,
+                b=b,
+                species_type=Species_types.ORBIUM,
+            )
+        elif kernel_type == Species_types.FISH:
+            self.filtre = Filtre(
+                growth_function=Statistical_growth_function(type=Growth_type.GAUSSIENNE),
+                size=filter_size,
+                b=None,
+                kernels=CONST.FISH_KERNEL,
+                species_type=Species_types.FISH,
+            )
+            self.filtre.kernels = CONST.FISH_KERNEL
+        elif kernel_type == Species_types.AQUARIUM:
+            self.filtre = Filtre(
+                growth_function=Statistical_growth_function(type=Growth_type.GAUSSIENNE),
+                size=filter_size,
+                b=None,
+                kernels=CONST.AQUARIUM_KERNEL,
+                multi_channel=self.multi_channel,
+                species_type=Species_types.AQUARIUM,
+            )
+            self.filtre.kernels = CONST.AQUARIUM_KERNEL
+        elif kernel_type == Species_types.WANDERER:
+            b = CONST.WANDERER_B
+            self.filtre = Filtre(
+                growth_function=Statistical_growth_function(type=Growth_type.GAUSSIENNE),
+                size=filter_size,
+                b=b,
+                species_type=Species_types.WANDERER,
+            )
+        elif kernel_type == Species_types.EMITTER:
+            self.filtre = Filtre(
+                growth_function=Statistical_growth_function(type=Growth_type.GAUSSIENNE),
+                size=filter_size,
+                b=None,
+                kernels=CONST.EMITTER_KERNEL,
+                multi_channel=self.multi_channel,
+                species_type=Species_types.EMITTER,
+            )
+            self.filtre.kernels = CONST.EMITTER_KERNEL
+        elif kernel_type == Species_types.PACMAN:
+            self.filtre = Filtre(
+                growth_function=Statistical_growth_function(type=Growth_type.GAUSSIENNE),
+                size=filter_size,
+                b=None,
+                kernels=CONST.PACMAN_KERNEL,
+                multi_channel=self.multi_channel,
+                species_type=Species_types.PACMAN,
+            )
+            self.filtre.kernels = CONST.PACMAN_KERNEL
+        else:  # generic
+            self.filtre = Filtre(
+                growth_function=Statistical_growth_function(type=Growth_type.GAUSSIENNE),
+                size=filter_size,
+                mus=CONST.MUS,
+                sigmas=CONST.SIGMAS,
+                species_type=Species_types.GENERIC,
+            )
+
+        # Mise à jour de la représentation x
+        if self.X_raw.ndim == 3 and self.multi_channel:
+            self.x = [self.X_raw[:, :, c].clone() for c in range(self.X_raw.shape[2])]
+        elif self.X_raw.ndim == 3:
+            self.x = torch.mean(self.X_raw, axis=2)  # type: ignore
+        else:
+            self.x = self.X_raw.clone()
+
+        # Appliquer un patch initial pour les espèces non multi-canaux définies par cellules
+        patch = None
+        if kernel_type == Species_types.ORBIUM:
+            patch = Orbium().make_patch(rotate=0, amplitude=4.0, normalize=True)
+        elif kernel_type == Species_types.HYDROGEMINIUM:
+            patch = Hydrogeminium().make_patch(rotate=0, amplitude=4.0, normalize=True)
+        elif kernel_type == Species_types.FISH:
+            patch = Fish().make_patch(rotate=0, amplitude=4.0, normalize=True)
+        elif kernel_type == Species_types.WANDERER:
+            patch = Wanderer().make_patch(rotate=0, amplitude=4.0, normalize=True)
+
+        if kernel_type not in (Species_types.AQUARIUM, Species_types.EMITTER, Species_types.PACMAN) and patch is not None:
+            self.apply_patch(patch, center=(CONST.BOARD_SIZE // 2, CONST.BOARD_SIZE // 2))

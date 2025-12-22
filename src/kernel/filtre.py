@@ -1,26 +1,4 @@
-from const.constantes import (
-    sigma,
-    mu,
-    BOARD_SIZE,
-    DT,
-    WANDERER_M,
-    WANDERER_S,
-    SOURCE_AQUARIUM,
-    DESTINATION_AQUARIUM,
-    AQUARIUM_hs,
-    AQUARIUM_ms,
-    AQUARIUM_ss,
-    SOURCE_EMITTER,
-    DESTINATION_EMITTER,
-    EMITTER_hs,
-    EMITTER_ms,
-    EMITTER_ss,
-    SOURCE_PACMAN,
-    DESTINATION_PACMAN,
-    PACMAN_hs,
-    PACMAN_ms,
-    PACMAN_ss,
-)
+from const import constantes as CONST
 from croissance.croissances import Statistical_growth_function
 from species.species_types import Species_types
 import torch
@@ -62,7 +40,7 @@ class Filtre:
         self.sigmas = sigmas
         self.b = b
         self.kernels = kernels
-        self.world_size = (BOARD_SIZE, BOARD_SIZE)
+        self.world_size = (CONST.BOARD_SIZE, CONST.BOARD_SIZE)
         self.R = size // 2
         self.y, self.x = torch.meshgrid(
             torch.arange(-self.R, self.R + 1),
@@ -179,7 +157,7 @@ class Filtre:
                 self.growth_function.bell_growth(U, k["m"], k["s"])
                 for U, k in zip(Us, self.kernels)
             ]
-            X = torch.clamp(X + DT * torch.mean(torch.stack(Gs), dim=0), 0, 1)  # type: ignore
+            X = torch.clamp(X + CONST.DT * torch.mean(torch.stack(Gs), dim=0), 0, 1)  # type: ignore
             return X  # <-- il manquait le return ici dans certains cas
 
         # --- Multi-channel mode (Aquarium / Emitter / Pacman) ---
@@ -194,27 +172,27 @@ class Filtre:
 
             if self.species_type == Species_types.AQUARIUM:
                 sources, dests, hs, ms, ss = (
-                    SOURCE_AQUARIUM,
-                    DESTINATION_AQUARIUM,
-                    AQUARIUM_hs,
-                    AQUARIUM_ms,
-                    AQUARIUM_ss,
+                    CONST.SOURCE_AQUARIUM,
+                    CONST.DESTINATION_AQUARIUM,
+                    CONST.AQUARIUM_hs,
+                    CONST.AQUARIUM_ms,
+                    CONST.AQUARIUM_ss,
                 )
             elif self.species_type == Species_types.EMITTER:
                 sources, dests, hs, ms, ss = (
-                    SOURCE_EMITTER,
-                    DESTINATION_EMITTER,
-                    EMITTER_hs,
-                    EMITTER_ms,
-                    EMITTER_ss,
+                    CONST.SOURCE_EMITTER,
+                    CONST.DESTINATION_EMITTER,
+                    CONST.EMITTER_hs,
+                    CONST.EMITTER_ms,
+                    CONST.EMITTER_ss,
                 )
             elif self.species_type == Species_types.PACMAN:
                 sources, dests, hs, ms, ss = (
-                    SOURCE_PACMAN,
-                    DESTINATION_PACMAN,
-                    PACMAN_hs,
-                    PACMAN_ms,
-                    PACMAN_ss,
+                    CONST.SOURCE_PACMAN,
+                    CONST.DESTINATION_PACMAN,
+                    CONST.PACMAN_hs,
+                    CONST.PACMAN_ms,
+                    CONST.PACMAN_ss,
                 )
             else:
                 raise ValueError("Species type non supporté pour multi-channel.")
@@ -241,11 +219,11 @@ class Filtre:
                 Gs[dst] += h * Gi
             if self.species_type == Species_types.PACMAN:
                 return [
-                    self.growth_function.soft_clip(Xi + DT * Gi, 0, 1)
+                    self.growth_function.soft_clip(Xi + CONST.DT * Gi, 0, 1)
                     for Xi, Gi in zip(X, Gs)
                 ]
             else:
-                return [torch.clamp(Xi + DT * Gi, 0, 1) for Xi, Gi in zip(X, Gs)]
+                return [torch.clamp(Xi + CONST.DT * Gi, 0, 1) for Xi, Gi in zip(X, Gs)]
 
         # --- Classic Lenia ---
         else:
@@ -266,13 +244,13 @@ class Filtre:
                     raise TypeError(
                         "X must be a torch.Tensor for WANDERER species type."
                     )
-                target = self.growth_function.target(U, WANDERER_M, WANDERER_S, None)
-                x = torch.clamp(x + DT * (target - x), 0, 1)
+                target = self.growth_function.target(U, CONST.WANDERER_M, CONST.WANDERER_S, None)
+                x = torch.clamp(x + CONST.DT * (target - x), 0, 1)
                 return x
             else:
-                if sigma is None or mu is None:
-                    raise ValueError("sigma and mu must be defined for classic Lenia.")
+                m = CONST.mu if CONST.mu is not None else CONST.GENERIC_M
+                s = CONST.sigma if CONST.sigma is not None else CONST.GENERIC_S
                 x = torch.clamp(
-                    x + DT * self.growth_function.gaussienne(U, sigma, mu), 0, 1
+                    x + CONST.DT * self.growth_function.gaussienne(U, s, m), 0, 1
                 )
                 return x
