@@ -279,12 +279,21 @@ class SimulationInterface:
         ax_sim.axis("off")
         ax_sim.set_title("Lenia Multi-Channel")
 
-        ax_species = fig.add_subplot(gs[0, 1])
+        # Panneau latéral identique au mono: espèces en haut, colormap en bas
+        side_gs = gs[0, 1].subgridspec(2, 1, height_ratios=[3, 1], hspace=0.35)
+        ax_species = fig.add_subplot(side_gs[0])
+        ax_cmap = fig.add_subplot(side_gs[1])
+        # Standardise l'apparence
+        for ax in (ax_species, ax_cmap):
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.set_frame_on(True)
         ax_species.set_title("Species", fontsize=11)
-        ax_species.set_xticks([])
-        ax_species.set_yticks([])
+        # Cache le bloc colormap mais conserve son espace pour ne pas redimensionner
+        ax_cmap.set_axis_off()
 
-        radio_species = RadioButtons(ax_species, CONST.AVAILABLE_SPECIES, active=0)
+        active_species = CONST.AVAILABLE_SPECIES.index(CONST.CURRENT_SPECIES) if CONST.CURRENT_SPECIES in CONST.AVAILABLE_SPECIES else (1 if len(CONST.AVAILABLE_SPECIES) > 1 else 0)
+        radio_species = RadioButtons(ax_species, CONST.AVAILABLE_SPECIES, active=active_species)
         for c in getattr(radio_species, "circles", []):
             try:
                 c.set_radius(0.06)
@@ -320,7 +329,8 @@ class SimulationInterface:
             im.set_array(rgb)
             return (im,)
 
-        self.anim = animation.FuncAnimation(fig, update, frames=num_steps, interval=40)
+        # blit=False pour stabilité sur macOS
+        self.anim = animation.FuncAnimation(fig, update, frames=num_steps, interval=40, blit=False)
 
         # Bas: boutons (pause/resume/reset)
         bottom_gs = gs[1, :].subgridspec(1, 5)
