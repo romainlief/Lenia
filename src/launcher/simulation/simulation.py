@@ -32,14 +32,9 @@ from species.hydrogeminium import Hydrogeminium
 from species.fish import Fish
 from species.wanderer import Wanderer
 from croissance.type_croissance import Growth_type
-
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-from matplotlib.image import AxesImage
-from matplotlib.figure import Figure
-from scipy.ndimage import shift
 from species.species_types import Species_types
 import torch
+from scipy.ndimage import shift
 
 
 class Simulation:
@@ -319,201 +314,6 @@ class Simulation:
                     torch.stack([self.x] * self.X_raw.shape[2], dim=2), 0.0, 1.0
                 )
 
-    def __update(self, frame: int) -> list[AxesImage]:
-        # Convert multi-channel list to single-channel tensor
-        if isinstance(self.x, list):
-            x_input = torch.mean(torch.stack(self.x, dim=0), dim=0)
-        else:
-            x_input = self.x
-
-        # s'assurer que x_input est torch.Tensor
-        if not isinstance(x_input, torch.Tensor):
-            x_input = torch.tensor(x_input, dtype=torch.float32)
-
-        # Appeler evolve_lenia en convertissant les sorties en torch.Tensor
-        result = self.filtre.evolve_lenia(x_input)
-        if not isinstance(result, torch.Tensor):
-            result = torch.tensor(result, dtype=torch.float32)
-        elif isinstance(result, list):
-            result = [
-                (
-                    torch.tensor(r, dtype=torch.float32)
-                    if not isinstance(r, torch.Tensor)
-                    else r
-                )
-                for r in result
-            ]
-
-        # Mettre à jour self.x
-        if isinstance(result, list):
-            self.x = [r.clone() for r in result]
-            display = torch.mean(torch.stack(self.x, dim=0), dim=0).cpu().numpy()
-        else:
-            self.x = result
-            display = self.x.cpu().numpy()
-
-        self.img.set_data(display)
-        return [self.img]
-
-    def _enable_resize(self, fig: Figure) -> None:
-        """
-        Attach a resize handler so the figure redraws and layout updates when
-        the window is resized (useful for GUI backends).
-
-        Args:
-            fig (Figure): The matplotlib figure to attach the resize handler to.
-        """
-
-        def _on_resize(event):
-            """
-            Handle the resize event for the figure.
-            """
-            try:
-                fig.tight_layout()
-            except Exception:
-                pass  # tight_layout can fail in some edge cases; ignore silently
-            fig.canvas.draw_idle()
-
-        fig.canvas.mpl_connect("resize_event", _on_resize)
-
-    def zoom_in(self, fig: Figure, factor: float = 1.1) -> None:
-        """
-        Zoom in the current view of the figure.
-
-        Args:
-            factor (float, optional): The zoom factor. Defaults to 1.2.
-            fig (plt.Figure): The matplotlib figure to zoom in.
-        """
-
-        def _on_zoom(event):
-            """
-            Handle the zoom event for the figure.
-            """
-            ax = fig.axes[0]
-            xlim = ax.get_xlim()
-            ylim = ax.get_ylim()
-            x_center = (xlim[0] + xlim[1]) / 2
-            y_center = (ylim[0] + ylim[1]) / 2
-            x_range = (xlim[1] - xlim[0]) / factor
-            y_range = (ylim[1] - ylim[0]) / factor
-            ax.set_xlim(x_center - x_range / 2, x_center + x_range / 2)
-            ax.set_ylim(y_center - y_range / 2, y_center + y_range / 2)
-            fig.canvas.draw_idle()
-
-        def _zoom_out(event):
-            """
-            Handle the zoom out event for the figure.
-            """
-            ax = fig.axes[0]
-            xlim = ax.get_xlim()
-            ylim = ax.get_ylim()
-            x_center = (xlim[0] + xlim[1]) / 2
-            y_center = (ylim[0] + ylim[1]) / 2
-            x_range = (xlim[1] - xlim[0]) * factor
-            y_range = (ylim[1] - ylim[0]) * factor
-            ax.set_xlim(x_center - x_range / 2, x_center + x_range / 2)
-            ax.set_ylim(y_center - y_range / 2, y_center + y_range / 2)
-            fig.canvas.draw_idle()
-
-        def _on_scroll(event):
-            """
-            Handle the scroll event for zooming in and out.
-            """
-            if event.button == "up":
-                _on_zoom(event)
-            elif event.button == "down":
-                _zoom_out(event)
-
-        fig.canvas.mpl_connect("scroll_event", _on_scroll)
-
-    def run(self, num_steps=100, interpolation="bicubic"):
-        """
-        The method that choose the run the simulation in function of if its multi_channel or not.
-
-        Args:
-            num_steps (int, optional): The number of steps to run the simulation. Defaults to 100.
-            interpolation (str, optional): The interpolation method for displaying the image. Defaults to "bicubic".
-        """
-        if self.multi_channel:
-            self.__run_multi(num_steps=num_steps, interpolation=interpolation)
-        else:
-            self.__run()
-
-    def __run(self):
-        """
-        Run the simulation for single-channel boards.
-        """
-        fig, ax = plt.subplots()
-        self.img = ax.imshow(self.x, cmap="inferno", interpolation="none")
-        ax.set_title("Lenia")
-        ax.set_xticks([])
-        ax.set_yticks([])
-        anim = animation.FuncAnimation(
-            fig, self.__update, frames=200, interval=20, blit=True
-        )
-        self._enable_resize(fig)
-        self.zoom_in(fig=fig)
-        plt.show()
-
-    def __run_multi(self, num_steps=100, interpolation="bicubic"):
-        """
-        Run the simulation for multi-channel boards.
-
-        Args:
-            num_steps (int, optional): The number of steps to run the simulation. Defaults to 100.
-            interpolation (str, optional): The interpolation method for displaying the image. Defaults to "bicubic".
-
-        Raises:
-            RuntimeError: If self.X is not a list (i.e., not multi-channel).
-
-        Returns:
-            None
-        """
-        if not isinstance(self.x, list):
-            raise RuntimeError(
-                "run_multi requires multi-channel board (self.X as list)"
-            )
-        fig, ax = plt.subplots()
-        self.x = [
-            torch.as_tensor(x) if not isinstance(x, torch.Tensor) else x for x in self.x
-        ]
-        im = ax.imshow(
-            torch.stack(self.x, dim=2).cpu().numpy(), interpolation=interpolation
-        )
-        ax.axis("off")
-        ax.set_title("Lenia Multi-Channel")
-
-        def __update_multi(i):
-            """
-            The update function for multi channel species
-            """
-            nonlocal im
-            result = self.filtre.evolve_lenia(self.x)  # type: ignore
-            # S'assurer que result est une liste de torch.Tensor
-            if not isinstance(result, list):
-                if isinstance(result, torch.Tensor):
-                    self.x = [result] if result.ndim == 2 else list(result)
-                else:
-                    self.x = [torch.as_tensor(result)]
-            else:
-                self.x = [
-                    torch.as_tensor(r) if not isinstance(r, torch.Tensor) else r
-                    for r in result
-                ]
-            # Affichage RGB : conversion en numpy pour matplotlib
-
-            rgb = torch.stack([self.x[1], self.x[2], self.x[0]], dim=2).cpu().numpy()
-            #  rgb =  torch.dstack(self.x)
-            im.set_array(rgb)
-            return (im,)
-
-        ani = animation.FuncAnimation(
-            fig, __update_multi, frames=num_steps, interval=50, blit=False
-        )
-        self._enable_resize(fig)
-        self.zoom_in(fig=fig)
-        plt.show()
-
     def place_multi_chan_species(
         self, space: torch.Tensor, cells: torch.Tensor, x: int, y: int
     ):
@@ -537,3 +337,13 @@ class Simulation:
                     space[yy, xx, c] = torch.clamp(
                         space[yy, xx, c] + cells[c, dy, dx], 0.0, 1.0
                     )
+
+    def reset(self) -> None:
+        """Reset the simulation to the initial state."""
+        if self.X_raw is not None:
+            if self.X_raw.ndim == 3 and self.multi_channel:
+                self.x = [self.X_raw[:, :, c].clone() for c in range(self.X_raw.shape[2])]
+            elif self.X_raw.ndim == 3:
+                self.x = torch.mean(self.X_raw, axis=2)  # type: ignore
+            else:
+                self.x = self.X_raw.clone()
