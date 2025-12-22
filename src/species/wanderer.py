@@ -1,4 +1,4 @@
-import numpy as np
+import torch
 from typing import Any, Dict, List
 from const.constantes import (
     WANDERER_M,
@@ -20,7 +20,7 @@ class Wanderer(ASpecies):
         self.m: float | None = WANDERER_M
         self.s: float | None = WANDERER_S
         self.b: List[float] | None = WANDERER_B
-        self.cells: np.ndarray | None = WANDERER_CELLS
+        self.cells: torch.Tensor | None = WANDERER_CELLS
         self.kernel: Dict[str, Any] | None = None
 
     def make_patch(
@@ -28,5 +28,5 @@ class Wanderer(ASpecies):
         rotate: int = 0,
         amplitude: float = 1.0,
         normalize: bool = True,
-    ) -> np.ndarray:
+    ) -> torch.Tensor:
         return super().make_patch(rotate, amplitude, normalize)

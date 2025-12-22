@@ -1,5 +1,5 @@
 from .abstract_species.A_species import ASpecies
-import numpy as np
+import torch
 from typing import Any, Dict, List
 from const.constantes import (
     FISH_KERNEL, FISH_CELLS, FISH_R, FISH_T
@@ -24,7 +24,7 @@ class Fish(ASpecies):
         self.m: float | None = None
         self.s: float | None = None
         self.b: List[float] | None = None
-        self.cells: np.ndarray | None = FISH_CELLS
+        self.cells: torch.Tensor | None = FISH_CELLS
         self.kernel: Dict[str, Any] | None = FISH_KERNEL
 
     def make_patch(
@@ -32,5 +32,5 @@ class Fish(ASpecies):
         rotate: int = 0,
         amplitude: float = 1.0,
         normalize: bool = True,
-    ) -> np.ndarray:
+    ) -> torch.Tensor:
         return super().make_patch(rotate, amplitude, normalize)

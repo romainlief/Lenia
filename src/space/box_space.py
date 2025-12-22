@@ -1,4 +1,4 @@
-from ASpace.space import Space
+from .ASpace.space import Space
 import torch
 import numbers
 

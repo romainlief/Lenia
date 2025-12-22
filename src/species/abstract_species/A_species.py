@@ -1,4 +1,4 @@
-import numpy as np
+import torch
 from abc import ABC
 from typing import Any, Dict, List
 from scipy.ndimage import shift
@@ -17,7 +17,7 @@ class ASpecies(ABC):
         self.m: float | None
         self.s: float | None
         self.b: List[float] | None
-        self.cells: np.ndarray | None
+        self.cells: torch.Tensor | None
         self.kernel: Dict[str, Any] | None
 
     def make_patch(
@@ -25,7 +25,7 @@ class ASpecies(ABC):
         rotate: int = 0,
         amplitude: float = 1.0,
         normalize: bool = False,
-    ) -> np.ndarray:
+    ) -> torch.Tensor:
         """
         Create a patch of the species with specified rotation and amplitude.
         
@@ -35,20 +35,19 @@ class ASpecies(ABC):
             normalize (bool, optional): Whether to normalize the patch. Defaults to False.
 
         Returns:
-            np.ndarray: The generated patch array.
+            torch.Tensor: The generated patch array.
         """
-        arr = np.asarray(self.cells, dtype=float)
+        arr = torch.tensor(self.cells, dtype=torch.float)
         
 
         if rotate % 4 != 0:
-            arr = np.rot90(arr, -(rotate % 4))
-
+            arr = torch.rot90(arr, -(rotate % 4))
         if normalize:
             mx = arr.max()
             if mx > 0:
                 arr = arr / mx
         # Continuous center of mass
-        yy, xx = np.indices(arr.shape)
+        yy, xx = torch.meshgrid(torch.arange(arr.shape[0]), torch.arange(arr.shape[1]), indexing="ij")
         mass = arr.sum()
 
         if mass > 0:

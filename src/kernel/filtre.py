@@ -1,4 +1,3 @@
-import numpy as np
 from const.constantes import (
     sigma,
     mu,
@@ -24,6 +23,7 @@ from const.constantes import (
 )
 from croissance.croissances import Statistical_growth_function
 from species.species_types import Species_types
+import torch
 
 
 class Filtre:
@@ -64,8 +64,12 @@ class Filtre:
         self.kernels = kernels
         self.world_size = (BOARD_SIZE, BOARD_SIZE)
         self.R = size // 2
-        self.y, self.x = np.ogrid[-self.R : self.R + 1, -self.R : self.R + 1]
-        self.distance = np.sqrt(self.x**2 + self.y**2)
+        self.y, self.x = torch.meshgrid(
+            torch.arange(-self.R, self.R + 1),
+            torch.arange(-self.R, self.R + 1),
+            indexing="ij",
+        )
+        self.distance = torch.sqrt(self.x**2 + self.y**2)
         self.r = self.distance / self.R
         self.multi_channel = multi_channel
         self.species_type = species_type
@@ -74,7 +78,7 @@ class Filtre:
             assert len(mus) == len(sigmas)
 
         # Préparation des kernels FFT dès l'init pour Fish
-        self.prepared_kernels_fft: list[np.ndarray] | None = None
+        self.prepared_kernels_fft: list[torch.Tensor] | None = None
         if self.kernels is not None:
             self.prepared_kernels_fft = self.prepare_kernels_fft()
 
@@ -89,20 +93,23 @@ class Filtre:
         kernels_fft = []
         if self.kernels is not None:
             for k in self.kernels:
-                y, x = np.ogrid[-mid_h:mid_h, -mid_w:mid_w]
-                # radius for this kernel (relative factor in pattern)
+                # Correction : meshgrid de -mid à mid-1 pour couvrir toute la grille
+                y, x = torch.meshgrid(
+                    torch.arange(-mid_h, H - mid_h, device="cpu"),
+                    torch.arange(-mid_w, W - mid_w, device="cpu"),
+                    indexing="ij",
+                )
                 r_k = max(1e-6, self.R * k.get("r", 1.0))
-                # distance scaled by kernel radius and number of rings
-                D = np.sqrt(x**2 + y**2) / r_k * len(k["b"])
-                amplitudes = np.asarray(k["b"])[
-                    np.minimum(D.astype(int), len(k["b"]) - 1)
+                D = torch.sqrt(x**2 + y**2) / r_k * len(k["b"])
+                amplitudes = torch.tensor(k["b"])[
+                    torch.minimum(D.to(torch.int64), torch.tensor(len(k["b"]) - 1))
                 ]
                 K_local = amplitudes * self.growth_function.target(
                     D % 1, 0.5, 0.15, None
                 )
                 K_local[D >= len(k["b"])] = 0
                 K_local /= K_local.sum() if K_local.sum() > 0 else 1
-                kernels_fft.append(np.fft.fft2(np.fft.fftshift(K_local)))
+                kernels_fft.append(torch.fft.fft2(torch.fft.fftshift(K_local)))
             return kernels_fft
         return []
 
@@ -110,7 +117,7 @@ class Filtre:
         """
         Apply the filter to the world state X
         Returns:
-            np.ndarray: The filtered world state in FFT format
+            torch.Tensor: The filtered world state in FFT format
         """
         # Fish mode
         if self.kernels is not None:
@@ -118,12 +125,14 @@ class Filtre:
 
         # Classic Lenia mode
         H, W = self.world_size
-        K_local = np.zeros_like(self.distance)
+        K_local = torch.zeros_like(self.distance)
 
         if self.b is not None:
-            b_arr = np.asarray(self.b)
+            b_arr = torch.tensor(self.b)
             D = self.distance / self.R * len(b_arr)
-            ring_indices = np.minimum(D.astype(int), len(b_arr) - 1)
+            ring_indices = torch.minimum(
+                D.to(torch.int64), torch.tensor(len(b_arr) - 1)
+            )
             amplitudes = b_arr[ring_indices]
             K_local = amplitudes * self.growth_function.target(D % 1, 0.5, 0.15, None)
             K_local[D >= len(b_arr)] = 0
@@ -138,103 +147,95 @@ class Filtre:
         K_local /= K_local.sum() if K_local.sum() > 0 else 1
 
         # Padding to grid format
-        K = np.zeros((H, W), dtype=float)
+        K = torch.zeros((H, W), dtype=torch.float)
         kh, kw = K_local.shape
         cy, cx = kh // 2, kw // 2
         K[:kh, :kw] = K_local
-        K = np.roll(K, -cy, axis=0)
-        K = np.roll(K, -cx, axis=1)
+        K = torch.roll(K, -cy, dims=0)
+        K = torch.roll(K, -cx, dims=1)
 
-        return np.fft.fft2(K)
+        return torch.fft.fft2(K)
 
-    def evolve_lenia(self, X: np.ndarray) -> np.ndarray | list[np.ndarray]:
+    def evolve_lenia(
+        self, X: torch.Tensor | list[torch.Tensor]
+    ) -> torch.Tensor | list[torch.Tensor]:
         """
         Evolve the world state X by one time step using the filter
-
-        Args:
-            X (np.ndarray): The current world state
-
-        Raises:
-            ValueError: If the species type is not supported for multi-channel.
-
-        Returns:
-            np.ndarray | list[np.ndarray]: The evolved world state after one time step
         """
-        if (  # Fish mode
+        # --- Fish mode ---
+        if (
             self.kernels is not None
             and not self.multi_channel
             and self.species_type == Species_types.FISH
         ):
+            # Toujours préparer les kernels FFT si besoin
+            if self.prepared_kernels_fft is None:
+                self.prepared_kernels_fft = self.prepare_kernels_fft()
             Ks = self.prepared_kernels_fft
-            if Ks is None:
-                raise ValueError("Kernels not prepared for Fish evolution.")
-            Us = [np.real(np.fft.ifft2(fK * np.fft.fft2(X))) for fK in Ks]
+            if Ks is None or len(Ks) == 0:
+                raise ValueError("Kernels FFT non préparés pour Fish evolution.")
+            Us = [torch.real(torch.fft.ifft2(fK * torch.fft.fft2(X))) for fK in Ks]
             Gs = [
                 self.growth_function.bell_growth(U, k["m"], k["s"])
                 for U, k in zip(Us, self.kernels)
             ]
-            X = np.clip(X + DT * np.mean(np.asarray(Gs), axis=0), 0, 1)
+            X = torch.clamp(X + DT * torch.mean(torch.stack(Gs), dim=0), 0, 1)
+            return X  # <-- il manquait le return ici dans certains cas
 
-        elif (  # Multi-channel mode (Aquarium / Emitter / Pacman)
+        # --- Multi-channel mode (Aquarium / Emitter / Pacman) ---
+        elif (
             self.kernels is not None
             and self.multi_channel
             and self.species_type
             in (Species_types.AQUARIUM, Species_types.EMITTER, Species_types.PACMAN)
         ):
-            # Multi-channel convolutional interactions
-            # X is a list of channel planes
-            fXs = [np.fft.fft2(Xi) for Xi in X]
-            Gs = [np.zeros_like(Xi) for Xi in X]
+            fXs = [torch.fft.fft2(Xi) for Xi in X]
+            Gs = [torch.zeros_like(Xi) for Xi in X]
 
-            # choose constants depending on species type
             if self.species_type == Species_types.AQUARIUM:
-                sources = SOURCE_AQUARIUM
-                dests = DESTINATION_AQUARIUM
-                hs = AQUARIUM_hs
-                ms = AQUARIUM_ms
-                ss = AQUARIUM_ss
+                sources, dests, hs, ms, ss = (
+                    SOURCE_AQUARIUM,
+                    DESTINATION_AQUARIUM,
+                    AQUARIUM_hs,
+                    AQUARIUM_ms,
+                    AQUARIUM_ss,
+                )
             elif self.species_type == Species_types.EMITTER:
-                sources = SOURCE_EMITTER
-                dests = DESTINATION_EMITTER
-                hs = EMITTER_hs
-                ms = EMITTER_ms
-                ss = EMITTER_ss
+                sources, dests, hs, ms, ss = (
+                    SOURCE_EMITTER,
+                    DESTINATION_EMITTER,
+                    EMITTER_hs,
+                    EMITTER_ms,
+                    EMITTER_ss,
+                )
             elif self.species_type == Species_types.PACMAN:
-                sources = SOURCE_PACMAN
-                dests = DESTINATION_PACMAN
-                hs = PACMAN_hs
-                ms = PACMAN_ms
-                ss = PACMAN_ss
+                sources, dests, hs, ms, ss = (
+                    SOURCE_PACMAN,
+                    DESTINATION_PACMAN,
+                    PACMAN_hs,
+                    PACMAN_ms,
+                    PACMAN_ss,
+                )
             else:
                 raise ValueError("Species type non supporté pour multi-channel.")
 
             n_channels = len(X)
+            funcs = [self.growth_function.bell_growth] * n_channels
             if n_channels == 3 and self.species_type == Species_types.EMITTER:
-                funcs = [
-                    self.growth_function.bell_growth,
-                    self.growth_function.bell_growth,
-                    self.growth_function.target,
-                ]
-            else:
-                funcs = [self.growth_function.bell_growth] * n_channels
+                funcs[2] = self.growth_function.target  # target function for channel 2
 
-            # for each kernel, compute its convolution on the source channel
             if self.prepared_kernels_fft is None:
-                raise ValueError(
-                    "prepared_kernels_fft is None, cannot proceed with multi-channel convolution."
-                )
+                raise ValueError("prepared_kernels_fft is None, cannot proceed.")
+
             for i, (fK, k) in enumerate(zip(self.prepared_kernels_fft, self.kernels)):
-                src = sources[i]
-                dst = dests[i]
-                h = hs[i]
-                m = ms[i]
-                s = ss[i]
-                U = np.real(np.fft.ifft2(fK * fXs[src]))
-                # select function by destination channel
+                src, dst = sources[i], dests[i]
+                h, m, s = hs[i], ms[i], ss[i]
+                U = torch.real(torch.fft.ifft2(fK * fXs[src]))
                 func = funcs[dst] if dst < len(funcs) else funcs[0]
-                if func is funcs[2]:  # target function needs A parameter
+
+                if func is funcs[2]:
                     A_dst = X[dst]
-                    Gi = func(U, m, s, float(np.mean(A_dst)))
+                    Gi = func(U, m, s, A_dst) # type: ignore
                 else:
                     Gi = func(U, m, s, None)
                 Gs[dst] += h * Gi
@@ -244,31 +245,26 @@ class Filtre:
                     for Xi, Gi in zip(X, Gs)
                 ]
             else:
-                return [np.clip(Xi + DT * Gi, 0, 1) for Xi, Gi in zip(X, Gs)]
-        else:  # Lenia classique
+                return [torch.clamp(Xi + DT * Gi, 0, 1) for Xi, Gi in zip(X, Gs)]
+
+        # --- Classic Lenia ---
+        else:
             K = self.filtrer()
-            if isinstance(K, list):
-                raise ValueError(
-                    "Expected a single kernel array, got a list. Check kernel configuration."
-                )
-            if K is None:
-                raise ValueError("Kernel is None. Check kernel configuration.")
-            U = np.real(np.fft.ifft2(np.fft.fft2(X) * K))
+            if K is None or isinstance(K, list):
+                raise ValueError("Kernel invalid for classic Lenia.")
+
+            x = X.clone().detach()
+            U = torch.real(torch.fft.ifft2(torch.fft.fft2(x) * K))
+
             if self.species_type == Species_types.WANDERER:
-                X = np.clip(
-                    X
-                    + DT
-                    * (
-                        self.growth_function.target(U, WANDERER_M, WANDERER_S, None) - X
-                    ),
-                    0,
-                    1,
-                )
+                x = X.clone().detach()
+                target = self.growth_function.target(U, WANDERER_M, WANDERER_S, None)
+                x = torch.clamp(x + DT * (target - x), 0, 1)
+                return x
             else:
                 if sigma is None or mu is None:
-                    raise ValueError(
-                        "sigma and mu must be defined for classic Lenia evolution."
-                    )
-                X = X + DT * self.growth_function.gaussienne(U, sigma, mu)
-                X = np.clip(X, 0, 1)
-        return X
+                    raise ValueError("sigma and mu must be defined for classic Lenia.")
+                x = torch.clamp(
+                    x + DT * self.growth_function.gaussienne(U, sigma, mu), 0, 1
+                )
+                return x

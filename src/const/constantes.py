@@ -1,21 +1,21 @@
 from .pattern import pattern
 from species.species_types import Species_types
-import numpy as np
+import torch
 
 # -----------BOARD---------------------
 BOARD_SIZE: int = 100
 VOID_BOARD: bool = True
 channel_count: int = 1
-SIMULATION_MODE: bool = True # True for simulation, False for Exploration
+SIMULATION_MODE: bool = True  # True for simulation, False for Exploration
 
 # --- CHOOSE ---
 USE_ORBIUM_PARAMS: bool = False
 USE_HYDROGEMINIUM_PARAMS: bool = False
 USE_FISH_PARAMS: bool = False
-USE_AQUARIUM_PARAMS: bool = False
+USE_AQUARIUM_PARAMS: bool = True
 USE_WANDERER_PARAMS: bool = False
-USE_EMITTER_PARAMS: bool = False
-USE_PACMAN_PARAMS: bool = True
+USE_EMITTER_PARAMS: bool = False  
+USE_PACMAN_PARAMS: bool = False 
 
 # ----------- PARAMETRES ORBIUM -----------
 ORBIUM_M: float = pattern["orbium"].get("m", 0)  # mu de la croissance pour cet orbium
@@ -61,7 +61,7 @@ AQUARIUM_rs = [AQUARIUM_R * k["r"] for k in AQUARIUM_KERNEL]
 AQUARIUM_ms = [k["m"] for k in AQUARIUM_KERNEL]
 AQUARIUM_ss = [k["s"] for k in AQUARIUM_KERNEL]
 AQUARIUM_hs = [k["h"] for k in AQUARIUM_KERNEL]
-AQUARIUM_CELLS = np.array(pattern["aquarium"]["cells"], dtype=np.float32)
+AQUARIUM_CELLS = torch.tensor(pattern["aquarium"]["cells"], dtype=torch.float32)
 
 # ----------- PARAMETRES WANDERER -----------
 WANDERER_M: float = pattern["wanderer"].get("m", 0)
@@ -83,7 +83,7 @@ EMITTER_rs = [EMITTER_R * k["r"] for k in EMITTER_KERNEL]
 EMITTER_ms = [k["m"] for k in EMITTER_KERNEL]
 EMITTER_ss = [k["s"] for k in EMITTER_KERNEL]
 EMITTER_hs = [k["h"] for k in EMITTER_KERNEL]
-EMITTER_CELLS = np.array(pattern["emitter"]["cells"], dtype=np.float32)
+EMITTER_CELLS = torch.tensor(pattern["emitter"]["cells"], dtype=torch.float32)
 
 # ----------- PARAMETRES PACMAN -----------
 PACMAN_R: int = pattern["pacman"].get("R", 0)
@@ -97,7 +97,7 @@ PACMAN_rs = [PACMAN_R * k["r"] for k in PACMAN_KERNEL]
 PACMAN_ms = [k["m"] for k in PACMAN_KERNEL]
 PACMAN_ss = [k["s"] for k in PACMAN_KERNEL]
 PACMAN_hs = [k["h"] for k in PACMAN_KERNEL]
-PACMAN_CELLS = np.array(pattern["pacman"]["cells"], dtype=np.float32)
+PACMAN_CELLS = torch.tensor(pattern["pacman"]["cells"], dtype=torch.float32)
 
 # ----------- PARAMETRES GENERIQUES -----------
 GENERIC_M: float = 0.5  # mu générique pour formes arbitraires
@@ -128,15 +128,15 @@ elif USE_FISH_PARAMS:
     kernel_type = Species_types.FISH
     channel_count = 1
 elif USE_AQUARIUM_PARAMS:
-    sigma = None  
-    mu = None  
+    sigma = None
+    mu = None
     active_r = AQUARIUM_R
     active_t = AQUARIUM_T
     kernel_type = Species_types.AQUARIUM
     channel_count = 3
 elif USE_EMITTER_PARAMS:
-    sigma = None 
-    mu = None  
+    sigma = None
+    mu = None
     active_r = EMITTER_R
     active_t = EMITTER_T
     kernel_type = Species_types.EMITTER
@@ -149,7 +149,7 @@ elif USE_WANDERER_PARAMS:
     kernel_type = Species_types.WANDERER
     channel_count = 1
 elif USE_PACMAN_PARAMS:
-    sigma = None 
+    sigma = None
     mu = None
     active_r = PACMAN_R
     active_t = PACMAN_T

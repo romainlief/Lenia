@@ -1,5 +1,4 @@
 from .abstract_species.A_species import ASpecies
-import numpy as np
 from typing import Any, Dict, List
 from const.constantes import (
     HYDROGEMINIUM_M,
@@ -9,7 +8,7 @@ from const.constantes import (
     HYDROGEMINIUM_B,
     HYDROGEMINIUM_CELLS,
 )
-
+import torch
 
 class Hydrogeminium(ASpecies):
     def __init__(self) -> None:
@@ -20,7 +19,7 @@ class Hydrogeminium(ASpecies):
         self.m: float | None = HYDROGEMINIUM_M
         self.s: float | None = HYDROGEMINIUM_S
         self.b: List[float] | None = HYDROGEMINIUM_B
-        self.cells: np.ndarray | None = HYDROGEMINIUM_CELLS
+        self.cells: torch.Tensor | None = HYDROGEMINIUM_CELLS
         self.kernel: Dict[str, Any] | None = None
 
     def make_patch(
@@ -28,5 +27,5 @@ class Hydrogeminium(ASpecies):
         rotate: int = 0,
         amplitude: float = 1.0,
         normalize: bool = True,
-    ) -> np.ndarray:
+    ) -> torch.Tensor:
         return super().make_patch(rotate, amplitude, normalize)

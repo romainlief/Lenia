@@ -1,4 +1,4 @@
-import numpy as np
+import torch
 from typing import Any, Dict, List
 from const.constantes import (
     ORBIUM_M,
@@ -20,7 +20,7 @@ class Orbium(ASpecies):
         self.m: float | None = ORBIUM_M
         self.s: float | None = ORBIUM_S
         self.b: List[float] | None = ORBIUM_B
-        self.cells: np.ndarray | None = ORBIUM_CELLS
+        self.cells: torch.Tensor | None = ORBIUM_CELLS
         self.kernel: Dict[str, Any] | None = None
 
     def make_patch(
@@ -28,5 +28,5 @@ class Orbium(ASpecies):
         rotate: int = 0,
         amplitude: float = 1.0,
         normalize: bool = True,
-    ) -> np.ndarray:
+    ) -> torch.Tensor:
         return super().make_patch(rotate, amplitude, normalize)
