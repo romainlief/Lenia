@@ -81,9 +81,9 @@ def build_single_view(simulation) -> SingleComponents:
         ax.set_frame_on(False)
         return Button(ax, text)
 
-    bpause = make_button(0, STR_BUTTON_PAUSE)
-    bresume = make_button(1, STR_BUTTON_RESUME)
-    breset = make_button(2, STR_BUTTON_RESET)
+    bpause = make_button(0, BUTTON_PAUSE)
+    bresume = make_button(1, BUTTON_RESUME)
+    breset = make_button(2, BUTTON_RESET)
 
     # Improve clickability
     for radio in (radio_species, radio_cmap):
@@ -152,8 +152,8 @@ def build_multi_view(simulation) -> MultiComponents:
         ax.set_frame_on(False)
         return Button(ax, text)
 
-    bpause = make_button(0, STR_BUTTON_PAUSE)
-    bresume = make_button(1, STR_BUTTON_RESUME)
-    breset = make_button(2, STR_BUTTON_RESET)
+    bpause = make_button(0, BUTTON_PAUSE)
+    bresume = make_button(1, BUTTON_RESUME)
+    breset = make_button(2, BUTTON_RESET)
 
     return MultiComponents(fig, im, radio_species, bpause, bresume, breset)

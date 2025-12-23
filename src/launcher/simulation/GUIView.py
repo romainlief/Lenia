@@ -65,8 +65,8 @@ def build_single_view(simulation) -> SingleComponents:
         _disp = torch.mean(torch.stack(simulation.x), dim=0)
     else:
         _disp = simulation.x
-    img = ax_sim.imshow(_disp.cpu().numpy(), cmap="inferno", interpolation="bicubic")
-    ax_sim.set_title("Lenia", fontsize=11)
+    img = ax_sim.imshow(_disp.cpu().numpy(), cmap=BASE_COLORMAP, interpolation="bicubic")
+    ax_sim.set_title(SIMULATION_TITLE, fontsize=11)
     ax_sim.set_xticks([])
     ax_sim.set_yticks([])
 
@@ -78,8 +78,8 @@ def build_single_view(simulation) -> SingleComponents:
         ax.set_xticks([])
         ax.set_yticks([])
         ax.set_frame_on(True)
-    ax_species.set_title("Species", fontsize=11)
-    ax_cmap.set_title("Colormap", fontsize=11)
+    ax_species.set_title(SPECIES_LABEL, fontsize=11)
+    ax_cmap.set_title(BUTTON_CMAP, fontsize=11)
 
     active_species = (
         CONST.AVAILABLE_SPECIES.index(CONST.CURRENT_SPECIES)
@@ -113,9 +113,9 @@ def build_single_view(simulation) -> SingleComponents:
         ax.set_frame_on(False)
         return Button(ax, text)
 
-    bpause = make_button(0, STR_BUTTON_PAUSE)
-    bresume = make_button(1, STR_BUTTON_RESUME)
-    breset = make_button(2, STR_BUTTON_RESET)
+    bpause = make_button(0, BUTTON_PAUSE)
+    bresume = make_button(1, BUTTON_RESUME)
+    breset = make_button(2, BUTTON_RESET)
 
     # Improve clickability
     for radio in (radio_species, radio_cmap):
@@ -165,7 +165,7 @@ def build_multi_view(simulation) -> MultiComponents:
     rgb = torch.stack(_x_list, dim=2).cpu().numpy()
     im = ax_sim.imshow(rgb, interpolation="bicubic")
     ax_sim.axis("off")
-    ax_sim.set_title("Lenia Multi-Channel", fontsize=11)
+    ax_sim.set_title(SIMULATION_TITLE + " Multi-Channel", fontsize=11)
 
     # Side panel: species top, colormap hidden but space preserved
     side_gs = gs[0, 1].subgridspec(2, 1, height_ratios=[3, 1], hspace=0.35)
@@ -175,7 +175,7 @@ def build_multi_view(simulation) -> MultiComponents:
         ax.set_xticks([])
         ax.set_yticks([])
         ax.set_frame_on(True)
-    ax_species.set_title("Species", fontsize=11)
+    ax_species.set_title(SPECIES_LABEL, fontsize=11)
     ax_cmap.set_axis_off()
 
     active_species = (
@@ -202,8 +202,8 @@ def build_multi_view(simulation) -> MultiComponents:
         ax.set_frame_on(False)
         return Button(ax, text)
 
-    bpause = make_button(0, STR_BUTTON_PAUSE)
-    bresume = make_button(1, STR_BUTTON_RESUME)
-    breset = make_button(2, STR_BUTTON_RESET)
+    bpause = make_button(0, BUTTON_PAUSE)
+    bresume = make_button(1, BUTTON_RESUME)
+    breset = make_button(2, BUTTON_RESET)
 
     return MultiComponents(fig, im, radio_species, bpause, bresume, breset)

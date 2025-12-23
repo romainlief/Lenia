@@ -4,10 +4,13 @@
 
 import matplotlib.pyplot as plt
 
-STR_BUTTON_PAUSE = "Pause"
-STR_BUTTON_RESUME = "Resume"
-STR_BUTTON_RESET = "Reset"
+SIMULATION_TITLE : str = "Lenia"
+BUTTON_PAUSE : str = "Pause"
+BUTTON_RESUME : str = "Resume"
+BUTTON_RESET : str = "Reset"
+BASE_COLORMAP : str = "inferno"
+SPECIES_LABEL : str = "Species"
 
 
-STR_BUTTON_CMAP = "Colormap"
-cmap_list = ["inferno", "viridis", "plasma", "magma", "cividis"]
+BUTTON_CMAP : str = "Colormap"
+cmap_list : list[str] = ["inferno", "viridis", "plasma", "magma", "cividis"]
