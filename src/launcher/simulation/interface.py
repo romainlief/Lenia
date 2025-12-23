@@ -6,6 +6,7 @@ import torch
 from ..simulation.const.constantes import *
 from const import constantes as CONST
 from ..simulation.simulation import Simulation
+from .view import build_single_view, build_multi_view, SingleComponents, MultiComponents
 
 
 class SimulationInterface:
@@ -123,59 +124,13 @@ class SimulationInterface:
         radio_species.on_clicked(on_species_selected)
         return radio_species, ax_species
 
-    def _run_single(self, num_steps):
-        fig = plt.figure(figsize=(11, 6))
-        gs = fig.add_gridspec(
-            2, 2,
-            height_ratios=[12, 1],
-            width_ratios=[8, 3],
-            left=0.04, right=0.98, top=0.94, bottom=0.08,
-            wspace=0.25, hspace=0.3
-        )
-
-        # Simulation
-        ax_sim = fig.add_subplot(gs[0, 0])
-        # Affichage initial 2D (moyenne si une liste est fournie)
-        if isinstance(self.simulation.x, list):
-            _disp = torch.mean(torch.stack(self.simulation.x), dim=0)
-        else:
-            _disp = self.simulation.x
-        img = ax_sim.imshow(_disp.cpu().numpy(), cmap="inferno", interpolation="bicubic")
-        ax_sim.set_title("Lenia")
-        ax_sim.set_xticks([])
-        ax_sim.set_yticks([])
-
-        # Panneau latéral: espèces + colormap (colormap plus compacte)
-        side_gs = gs[0, 1].subgridspec(2, 1, height_ratios=[3, 1], hspace=0.35)
-        ax_species = fig.add_subplot(side_gs[0])
-        ax_cmap = fig.add_subplot(side_gs[1])
-        for ax in (ax_species, ax_cmap):
-            ax.set_xticks([])
-            ax.set_yticks([])
-            ax.set_frame_on(True)
-        ax_species.set_title("Species", fontsize=11)
-        ax_cmap.set_title("Colormap", fontsize=11)
-
-        # Radio species
-        active_species = CONST.AVAILABLE_SPECIES.index(CONST.CURRENT_SPECIES) if CONST.CURRENT_SPECIES in CONST.AVAILABLE_SPECIES else (1 if len(CONST.AVAILABLE_SPECIES) > 1 else 0)
-        radio_species = RadioButtons(ax_species, CONST.AVAILABLE_SPECIES, active=active_species)
-
-        # Radio colormap (2e par défaut si dispo)
-        default_cmap_index = 1 if len(cmap_list) > 1 else 0
-        radio_cmap = RadioButtons(ax_cmap, cmap_list, active=default_cmap_index)
-
-        # Améliore cliquabilité
-        for radio in (radio_species, radio_cmap):
-            for c in getattr(radio, "circles", []):
-                try:
-                    c.set_radius(0.06)
-                except Exception:
-                    pass
-            for label in getattr(radio, "labels", []):
-                try:
-                    label.set_fontsize(10)
-                except Exception:
-                    pass
+    def _run_single(self, num_steps, block=True):
+        comps: SingleComponents = build_single_view(self.simulation)
+        fig = comps.fig
+        img = comps.img
+        radio_species = comps.radio_species
+        radio_cmap = comps.radio_cmap
+        bpause, bresume, breset = comps.bpause, comps.bresume, comps.breset
 
         # Animation
         def update(_):
@@ -221,18 +176,7 @@ class SimulationInterface:
         radio_cmap.on_clicked(change_cmap)
 
         # Boutons bas
-        bottom_gs = gs[1, :].subgridspec(1, 5)
-
-        def make_button(col, text):
-            ax = fig.add_subplot(bottom_gs[0, col])
-            ax.set_xticks([])
-            ax.set_yticks([])
-            ax.set_frame_on(False)
-            return Button(ax, text)
-
-        bpause = make_button(0, STR_BUTTON_PAUSE)
-        bresume = make_button(1, STR_BUTTON_RESUME)
-        breset = make_button(2, STR_BUTTON_RESET)
+        # Boutons déjà construits par le builder
 
         def on_pause(_):
             self.paused = True
@@ -262,43 +206,12 @@ class SimulationInterface:
         self.zoom_in(fig)
         plt.show()
 
-    def _run_multi(self, num_steps):
-        fig = plt.figure(figsize=(11, 6))
-        gs = fig.add_gridspec(
-            2, 2,
-            height_ratios=[12, 1],
-            width_ratios=[8, 3],
-            left=0.04, right=0.98, top=0.94, bottom=0.08,
-            wspace=0.25, hspace=0.3
-        )
-
-        ax_sim = fig.add_subplot(gs[0, 0])
-        _x_list = self.simulation.x if isinstance(self.simulation.x, list) else [self.simulation.x]
-        rgb = torch.stack(_x_list, dim=2).cpu().numpy()
-        im = ax_sim.imshow(rgb, interpolation="bicubic")
-        ax_sim.axis("off")
-        ax_sim.set_title("Lenia Multi-Channel")
-
-        # Panneau latéral identique au mono: espèces en haut, colormap en bas
-        side_gs = gs[0, 1].subgridspec(2, 1, height_ratios=[3, 1], hspace=0.35)
-        ax_species = fig.add_subplot(side_gs[0])
-        ax_cmap = fig.add_subplot(side_gs[1])
-        # Standardise l'apparence
-        for ax in (ax_species, ax_cmap):
-            ax.set_xticks([])
-            ax.set_yticks([])
-            ax.set_frame_on(True)
-        ax_species.set_title("Species", fontsize=11)
-        # Cache le bloc colormap mais conserve son espace pour ne pas redimensionner
-        ax_cmap.set_axis_off()
-
-        active_species = CONST.AVAILABLE_SPECIES.index(CONST.CURRENT_SPECIES) if CONST.CURRENT_SPECIES in CONST.AVAILABLE_SPECIES else (1 if len(CONST.AVAILABLE_SPECIES) > 1 else 0)
-        radio_species = RadioButtons(ax_species, CONST.AVAILABLE_SPECIES, active=active_species)
-        for c in getattr(radio_species, "circles", []):
-            try:
-                c.set_radius(0.06)
-            except Exception:
-                pass
+    def _run_multi(self, num_steps, block=True):
+        comps: MultiComponents = build_multi_view(self.simulation)
+        fig = comps.fig
+        im = comps.im
+        radio_species = comps.radio_species
+        bpause, bresume, breset = comps.bpause, comps.bresume, comps.breset
 
         def change_species(label):
             if self.anim is not None:
@@ -333,17 +246,7 @@ class SimulationInterface:
         self.anim = animation.FuncAnimation(fig, update, frames=num_steps, interval=40, blit=False)
 
         # Bas: boutons (pause/resume/reset)
-        bottom_gs = gs[1, :].subgridspec(1, 5)
-        def make_button(col, text):
-            ax = fig.add_subplot(bottom_gs[0, col])
-            ax.set_xticks([])
-            ax.set_yticks([])
-            ax.set_frame_on(False)
-            return Button(ax, text)
-
-        bpause = make_button(0, STR_BUTTON_PAUSE)
-        bresume = make_button(1, STR_BUTTON_RESUME)
-        breset = make_button(2, STR_BUTTON_RESET)
+        # Boutons déjà construits par le builder
 
         def on_pause_mc(_):
             self.paused = True
@@ -369,5 +272,3 @@ class SimulationInterface:
 
         self.zoom_in(fig)
         plt.show()
-
-    # create_buttons supprimé: boutons construits inline
