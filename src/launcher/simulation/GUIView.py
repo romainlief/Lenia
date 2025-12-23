@@ -10,6 +10,9 @@ from const import constantes as CONST
 
 @dataclass
 class SingleComponents:
+    """
+    Components of the single-channel GUI view.
+    """
     fig: Figure
     img: Any
     radio_species: RadioButtons
@@ -21,6 +24,9 @@ class SingleComponents:
 
 @dataclass
 class MultiComponents:
+    """
+    Components of the multi-channel GUI view.
+    """
     fig: Figure
     im: Any
     radio_species: RadioButtons
@@ -30,6 +36,15 @@ class MultiComponents:
 
 
 def build_single_view(simulation) -> SingleComponents:
+    """
+    Builds the single-channel GUI view.
+
+    Args:
+        simulation (Simulation): The simulation instance.
+
+    Returns:
+        SingleComponents: The components of the single-channel GUI view.
+    """
     fig = plt.figure(figsize=(11, 6))
     gs = fig.add_gridspec(
         2,
@@ -81,7 +96,17 @@ def build_single_view(simulation) -> SingleComponents:
     # Bottom buttons
     bottom_gs = gs[1, :].subgridspec(1, 5)
 
-    def make_button(col, text):
+    def make_button(col: int, text: str) -> Button:
+        """
+        Creates a button in the specified column with the given text.
+
+        Args:
+            col (int): The column index where the button will be placed.
+            text (str): The text label for the button.
+
+        Returns:
+            Button: The created button instance.
+        """
         ax = fig.add_subplot(bottom_gs[0, col])
         ax.set_xticks([])
         ax.set_yticks([])
@@ -111,6 +136,15 @@ def build_single_view(simulation) -> SingleComponents:
 
 
 def build_multi_view(simulation) -> MultiComponents:
+    """
+    Builds the multi-channel GUI view.
+
+    Args:
+        simulation (Simulation): The simulation instance.
+
+    Returns:
+        MultiComponents: The components of the multi-channel GUI view.
+    """
     fig = plt.figure(figsize=(11, 6))
     gs = fig.add_gridspec(
         2,
