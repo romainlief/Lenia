@@ -236,7 +236,6 @@ class GUILogic:
             # Met à jour le mode (mono/multi) avant de relancer
             self.multi_channel = self.simulation.multi_channel
             try:
-                print("ici")
                 plt.close(fig)
             except Exception:
                 pass
